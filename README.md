@@ -3,9 +3,9 @@
 [![Build status](https://travis-ci.org/leanprover-community/mathlib-nursery.svg?branch=master "Check the Travis CI build status")](https://travis-ci.org/leanprover-community/mathlib-nursery)
 [![Join the chat](https://img.shields.io/badge/zulip-join_the_chat-blue.svg "Join the Zulip chat")](https://leanprover.zulipchat.com/)
 
-This is a community-maintained library for [Lean](https://leanprover.github.io/)
-code under development for contribution to
-[`mathlib`](https://github.com/leanprover/mathlib).
+This is a collaboratively maintained library for
+[Lean](https://leanprover.github.io/) code under development and intended for
+contribution to [`mathlib`](https://github.com/leanprover/mathlib).
 
 ### Background
 
@@ -38,7 +38,7 @@ contribution to `mathlib`? Consider these points:
 * You want to share your code with a wider audience (e.g. to get feedback before
   submission to `mathlib`).
 
-If any of these apply, you've come to the right place!
+If any of these apply, you've come to the right place.
 
 **What are the requirements<sup>[1](#footnote1)</sup> for contribution?**
 
@@ -53,8 +53,8 @@ cooperatively towards the `mathlib` standard.
 
 However, `mathlib-nursery` is still intended for sharing. Since some people rely
 on `mathlib-nursery` in their projects, we don't want to burden them with broken
-builds and warnings. Sorry, this means no `sorry`s or `don't know how to
-synthesize placeholder` errors!
+builds and warnings. Sorry, this means no `sorry`s, `unsolved goals`, or `don't
+know how to synthesize placeholder` errors.
 
 If you have a work-in-progress project that doesn't meet the above requirements,
 we recommend creating a repository for it. When it's ready, feel free to
@@ -64,7 +64,27 @@ Note that an implication of our contribution policy is that `mathlib-nursery`
 could undergo significant changes from one commit to the next. If you do depend
 on it, you should stick to the `git` revision that works for you.
 
+**What is the lifetime of a contribution?**
+
+A nursery is a place of change, and children grow old and eventually leave.
+Likewise, we do not expect `mathlib-nursery` to be a static resting place for
+code to lie forever. Eventually, one of the following may happen to a given
+piece of code:
+
+* It graduates into a `mathlib` contribution and is removed from
+  `mathlib-nursery`.
+* It is replaced by something better.
+* It is removed from `mathlib-nursery` after some time because it is no longer
+  maintained or considered useful.<sup>[2](#footnote2)</sup>
+
+`mathlib-nursery`'s main purpose is collaborative code-rearing. This is not the
+only place to raise your code, and it serves no special position with respect to
+`mathlib` contributions. You are welcome to work with us here or somewhere else.
+
 ---
 
-<sup><a name="footnote1">1</a></sup> These requirements apply only to the `master` branch.
-If you work on a non-`master` branch, you can do whatever you want.
+<sup><a name="footnote1">1</a></sup> These requirements apply only to the
+`master` branch. You can do whatever you want in a non-`master` branch.
+
+<sup><a name="footnote2">2</a></sup> We use `git`, so we can always go back in
+the commit history to recover code.
