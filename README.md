@@ -41,7 +41,7 @@ If any of these apply, you've come to the right place!
 **What are the requirements<sup>[1](#footnote1)</sup> for contribution?**
 
 1. Your code builds without errors or warnings.
-2. The directory and file structure should roughly follow that of `mathlib`s.
+2. The directory and file structure roughly follows `mathlib`'s.
 
 That's it!
 
