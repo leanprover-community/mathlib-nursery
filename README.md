@@ -40,17 +40,21 @@ If any of these apply, you've come to the right place!
 
 **What are the requirements<sup>[1](#footnote1)</sup> for contribution?**
 
-1. Your code should build.
-2. There should be no `sorry`s or `_`.
-3. The directory and file structure should roughly follow that of `mathlib`s.
+1. Your code builds without errors or warnings.
+2. The directory and file structure should roughly follow that of `mathlib`s.
 
 That's it!
 
-We will gladly accept “bad” proofs and incomplete theories. But some people rely
-on `mathlib-nursery` in their projects, so we don't want to burden them with
-broken builds and `sorry` warnings.
+We will gladly accept “bad” proofs and incomplete theories. We're pretty relaxed
+about code naming and quality. After all, the goal is to improve it
+cooperatively towards the `mathlib` standard.
 
-If you do have a work-in-progress project that doesn't meet these requirements,
+However, `mathlib-nursery` is still intended for sharing. Since some people rely
+on `mathlib-nursery` in their projects, we don't want to burden them with broken
+builds and warnings. Sorry, this means no `sorry`s or `don't know how to
+synthesize placeholder` errors!
+
+If you have a work-in-progress project that doesn't meet the above requirements,
 we recommend creating a repository for it. When it's ready, feel free to
 contribute it to `mathlib-nursery`.
 
