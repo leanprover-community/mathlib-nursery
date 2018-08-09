@@ -1,6 +1,7 @@
 ## `mathlib-nursery`
 
-[![Build Status](https://travis-ci.org/leanprover-community/mathlib-nursery.svg?branch=master)](https://travis-ci.org/leanprover-community/mathlib-nursery)
+[![Build status](https://travis-ci.org/leanprover-community/mathlib-nursery.svg?branch=master "Check the Travis CI build status")](https://travis-ci.org/leanprover-community/mathlib-nursery)
+[![Join the chat](https://img.shields.io/badge/zulip-join_the_chat-blue.svg "Join the Zulip chat")](https://leanprover.zulipchat.com/)
 
 This is a community-maintained library for [Lean](https://leanprover.github.io/)
 code under development for contribution to
@@ -12,9 +13,10 @@ code under development for contribution to
 aspires to be the best common source for formalized mathematics in Lean. (And we
 applaud this goal!)
 
-A community has formed around `mathlib` due to a combination of the joy of
-formalizing mathematics in Lean, `mathlib`'s coverage of mathematics, and the
-quality of `mathlib`'s definitions and theorems.
+A community (find us on [Zulip](https://leanprover.zulipchat.com/)) has formed
+around `mathlib` due to a combination of the joy of formalizing mathematics in
+Lean, `mathlib`'s coverage of mathematics, and the quality of `mathlib`'s
+definitions and theorems.
 
 Not everyone working on formalizing mathematics in Lean has the experience or
 time to meet `mathlib`'s contribution standard. Therefore, some of us decided to
