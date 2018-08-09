@@ -46,18 +46,17 @@ If any of these apply, you've come to the right place!
 
 That's it!
 
-We'll gladly accept bad proofs and incomplete theories. But some people rely on
-`mathlib-nursery` in their projects, so we don't want to burden them with broken
-builds and `sorry` warnings.
+We will gladly accept “bad” proofs and incomplete theories. But some people rely
+on `mathlib-nursery` in their projects, so we don't want to burden them with
+broken builds and `sorry` warnings.
 
 If you do have a work-in-progress project that doesn't meet these requirements,
-we recommend you create a repository for it. When it's ready, feel free to
+we recommend creating a repository for it. When it's ready, feel free to
 contribute it to `mathlib-nursery`.
 
-Note that an implication of our contribution policy is that the
-`mathlib-nursery` could undergo significant changes from one commit to the next.
-If you do depend on it, you should stick to the `git` revision that works for
-you.
+Note that an implication of our contribution policy is that `mathlib-nursery`
+could undergo significant changes from one commit to the next. If you do depend
+on it, you should stick to the `git` revision that works for you.
 
 ---
 
