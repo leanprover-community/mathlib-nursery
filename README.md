@@ -7,7 +7,7 @@ This is a collaboratively maintained library for
 [Lean](https://leanprover.github.io/) code under development and intended for
 contribution to [`mathlib`](https://github.com/leanprover/mathlib).
 
-### Background
+### α. Background
 
 `mathlib` has a high standard for contributions. This is natural because it
 aspires to be the best common source for formalized mathematics in Lean. (And we
@@ -24,7 +24,7 @@ create `mathlib-nursery` to support each other in nursing projects by improving
 upon them until they can be contributed to `mathlib`. Similarly, we can share
 these work-in-progress projects here even though they may not be perfect.
 
-### Contributions
+### β. Contributions
 
 Contributions to the `mathlib-nursery` are welcome!
 
@@ -77,7 +77,7 @@ piece of code:
 * It is removed from `mathlib-nursery` after some time because it is no longer
   maintained or considered useful.<sup>[2](#footnote2)</sup>
 
-### Summary
+### γ. Summation
 
 The purpose of `mathlib-nursery` is collaborative code-rearing. This is one of
 many places to raise your code, and it serves no special position with respect
