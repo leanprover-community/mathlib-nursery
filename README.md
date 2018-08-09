@@ -77,14 +77,17 @@ piece of code:
 * It is removed from `mathlib-nursery` after some time because it is no longer
   maintained or considered useful.<sup>[2](#footnote2)</sup>
 
-`mathlib-nursery`'s main purpose is collaborative code-rearing. This is not the
-only place to raise your code, and it serves no special position with respect to
-`mathlib` contributions. You are welcome to work with us here or somewhere else.
+### Summary
+
+The purpose of `mathlib-nursery` is collaborative code-rearing. This is one of
+many places to raise your code, and it serves no special position with respect
+to `mathlib`. You are welcome to work with us here or work somewhere else.
+Either way, happy formalizing!
 
 ---
 
 <sup><a name="footnote1">1</a></sup> These requirements apply only to the
 `master` branch. You can do whatever you want in a non-`master` branch.
 
-<sup><a name="footnote2">2</a></sup> We use `git`, so we can always go back in
-the commit history to recover code.
+<sup><a name="footnote2">2</a></sup> Since we use `git`, we can always go back
+in the commit history to recover code that was removed.
