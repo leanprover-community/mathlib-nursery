@@ -72,7 +72,7 @@ instance {s : Type u₀} {s' : Type u₁} {m m'} [functor m'] [functor m] [is_la
   [liftable1 m m'] [liftable s s'] :
   liftable1 (state_t s m) (state_t s' m') :=
 state_t.liftable' liftable.lift
-#check @state_t.liftable1
+
 def reader_t.liftable' {s : Type u₀} {s' : Type u₁} {m : Type u₀ → Type v₀} {m' : Type u₁ → Type v₁}
   [liftable1 m m']
   (F : s ≃ s') :
@@ -86,7 +86,6 @@ instance {s : Type u₀} {s' : Type u₁} {m : Type u₀ → Type v₀} {m' : Ty
   [liftable1 m m'] [liftable s s'] :
   liftable1 (reader_t s m) (reader_t s' m') :=
 reader_t.liftable' liftable.lift
-#check @reader_t.liftable1
 
 -- namespace liftable
 
