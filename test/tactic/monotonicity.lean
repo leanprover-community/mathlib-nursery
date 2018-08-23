@@ -8,37 +8,57 @@ import data.list.basic
 
 open list tactic tactic.interactive
 
-lemma bar
+example
   (h : 3 + 6 ≤ 4 + 5)
 : 1 + 3 + 2 + 6 ≤ 4 + 2 + 1 + 5 :=
 begin
   ac_mono,
 end
 
-lemma bar'
+example
+  (h : 3 ≤ (4 : ℤ))
+  (h' : 5 ≤ (6 : ℤ))
+: (1 + 3 + 2) - 6 ≤ (4 + 2 + 1 : ℤ) - 5 :=
+by ac_mono.
+
+example
   (h : 3 ≤ (4 : ℤ))
   (h' : 5 ≤ (6 : ℤ))
 : (1 + 3 + 2) - 6 ≤ (4 + 2 + 1 : ℤ) - 5 :=
 begin
   transitivity (1 + 3 + 2 - 5 : ℤ),
-  ac_mono,
-  ac_mono,
+  { ac_mono },
+  { ac_mono },
 end
 
-example (x y z : ℤ)
+example (x y z k : ℤ)
   (h : 3 ≤ (4 : ℤ))
-  (h' : z ≤ (y : ℤ))
-: (1 + 3 + x) - y ≤ (1 + 4 + x : ℤ) - z :=
+  (h' : z ≤ y)
+: (k + 3 + x) - y ≤ (k + 4 + x) - z :=
 begin
-  transitivity (1 + 3 + x - z : ℤ),
-  mono, mono,
-  mono, mono,
+  mono, -- unfold `(-)`, apply add_le_add
+  { -- ⊢ k + 3 + x ≤ k + 4 + x
+    mono, -- apply add_le_add, refl
+    -- ⊢ k + 3 ≤ k + 4
+    mono },
+  { -- ⊢ -y ≤ -z
+    mono /- apply neg_le_neg -/ }
 end
 
 example (x y z : ℤ)
   (h : 3 ≤ (4 : ℤ))
-  (h' : z ≤ (y : ℤ))
-: (1 + 3 + x) - y ≤ (1 + 4 + x : ℤ) - z :=
+  (h' : z ≤ y)
+: (1 + 3 + x) - y ≤ (1 + 4 + x) - z :=
+begin
+  transitivity (1 + 3 + x - z),
+  { mono, mono },
+  { mono, mono },
+end
+
+example (x y z : ℤ)
+  (h : 3 ≤ (4 : ℤ))
+  (h' : z ≤ y)
+: (1 + 3 + x) - y ≤ (1 + 4 + x) - z :=
 begin
   ac_mono, mono*
 end
@@ -186,6 +206,18 @@ begin
   ac_mono,
   ac_mono,
   solve_by_elim
+end
+
+example (x y z k m n : ℕ)
+  (h₀ : z ≥ 0)
+  (h₁ : x ≤ y)
+: (m + x + n) * z + k ≤ z * (y + n + m) + k :=
+begin
+  ac_mono,
+  -- ⊢ (m + x + n) * z ≤ z * (y + n + m)
+  ac_mono,
+  -- ⊢ m + x + n ≤ y + n + m
+  ac_mono,
 end
 
 example (x y z k m n : ℕ)
