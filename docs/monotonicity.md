@@ -10,9 +10,11 @@
     - left:  `x ≤ w` and `y < z` or
     - right: `x < w` and `y ≤ z`
 
+To use it, first import `tactic.monotonicity`.
+
 Here is an example of mono:
 
-```
+```lean
 example (x y z k : ℤ)
   (h : 3 ≤ (4 : ℤ))
   (h' : z ≤ y) :
@@ -30,15 +32,13 @@ end
 
 More succinctly, we can prove the same goal as:
 
-```
+```lean
 example (x y z k : ℤ)
   (h : 3 ≤ (4 : ℤ))
   (h' : z ≤ y) :
   (k + 3 + x) - y ≤ (k + 4 + x) - z :=
 by mono*
 ```
-
-The same example
 
 ### ac_mono
 
@@ -63,9 +63,11 @@ In the case where `f` is an associative or commutative operator,
 use the one the minimizes the difference between the left-hand side
 and the right-hand side.
 
+To use it, first import `tactic.monotonicity`.
+
 `ac_mono` can be used as follows:
 
-```
+```lean
 example (x y z k m n : ℕ)
   (h₀ : z ≥ 0)
   (h₁ : x ≤ y) :
@@ -83,7 +85,7 @@ As with `mono*`, `ac_mono*` solves the goal in one go and so does
 `ac_mono* h₁`. The latter syntax becomes especially interesting in the
 following example:
 
-```
+```lean
 example (x y z k m n : ℕ)
   (h₀ : z ≥ 0)
   (h₁ : m + x + n ≤ y + n + m) :

@@ -19,7 +19,7 @@ example
   (h : 3 ≤ (4 : ℤ))
   (h' : 5 ≤ (6 : ℤ))
 : (1 + 3 + 2) - 6 ≤ (4 + 2 + 1 : ℤ) - 5 :=
-by ac_mono.
+by ac_mono
 
 example
   (h : 3 ≤ (4 : ℤ))
@@ -224,13 +224,13 @@ example (x y z k m n : ℕ)
   (h₀ : z ≥ 0)
   (h₁ : x ≤ y)
 : (m + x + n) * z + k ≤ z * (y + n + m) + k :=
-by {  ac_mono* h₁ }
+by {  ac_mono* := h₁ }
 
 example (x y z k m n : ℕ)
   (h₀ : z ≥ 0)
   (h₁ : m + x + n ≤ y + n + m)
 : (m + x + n) * z + k ≤ z * (y + n + m) + k :=
-by { ac_mono* h₁ }
+by { ac_mono* := h₁ }
 
 example (x y z k m n : ℕ)
   (h₀ : z ≥ 0)
@@ -298,7 +298,7 @@ begin
   (do v ← mk_mvar,
       p ← to_expr ```(%%v + x ≤ y + %%v),
       assert `h' p),
-  ac_mono h,
+  ac_mono := h,
   trivial,
   exact 1,
 end
@@ -385,7 +385,7 @@ begin
   (do v ← mk_mvar,
       p ← to_expr ```(%%v + x ≤ y + %%v),
       assert `h' p),
-  ac_mono h,
+  ac_mono := h,
   trivial,
   exact 3
 end
