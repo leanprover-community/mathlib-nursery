@@ -24,6 +24,14 @@ variable {α : Type*}
 section monotonicity
 
 @[monotonic]
+lemma nat.add_le_add {a b c d : ℕ}
+  (h : a ≤ c)
+  (h' : b ≤ d) :
+  a + b ≤ c + d :=
+le_trans (nat.add_le_add_right h _)
+         (nat.add_le_add_left h' _)
+
+@[monotonic]
 lemma mul_mono_nonneg {x y z : α} [ordered_semiring α]
   (h' : 0 ≤ z)
   (h : x ≤ y)
