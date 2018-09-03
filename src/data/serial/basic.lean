@@ -4,6 +4,7 @@ import tactic.monotonicity
 import tactic.norm_num
 import category.basic
 import category.nursery
+import data.equiv.nursery
 import data.serial.medium
 
 universes u v w
@@ -17,29 +18,33 @@ class serial (α : Type u) :=
   (correctness : ∀ w, decode -<< encode w = pure w)
 
 class serial1 (f : Type u → Type v) :=
-  (encode : Π {α} [serial α], f α → put_m.{v})
-  (decode : Π {α} [serial α], get_m (f α))
-  (correctness : ∀ {α} [serial α] (w : f α), decode -<< encode w = pure w)
+  (encode : Π {α}, (α → put_m.{u}) → f α → put_m.{v})
+  (decode : Π {α}, get_m α → get_m (f α))
+  (correctness : ∀ {α} put get, serial_inverse.{u} put get →
+                 ∀ (w : f α), decode get -<< encode put w = pure w)
 
 instance serial.serial1 {f α} [serial1 f] [serial α] : serial (f α) :=
-{ encode := λ x, serial1.encode x,
-  decode := serial1.decode f,
-  correctness := serial1.correctness }
+{ encode := λ x, serial1.encode serial.encode x,
+  decode := serial1.decode f (serial.decode α),
+  correctness := serial1.correctness _ _ serial.correctness }
 
 class serial2 (f : Type u → Type v → Type w) :=
-  (encode : Π {α β} [serial α] [serial β], f α β → put_m.{w})
-  (decode : Π {α β} [serial α] [serial β], get_m (f α β))
-  (correctness : ∀ {α β} [serial α] [serial β] (w : f α β), decode -<< encode w = pure w)
+  (encode : Π {α β}, (α → put_m.{u}) → (β → put_m.{v}) → f α β → put_m.{w})
+  (decode : Π {α β}, get_m α → get_m β → get_m (f α β))
+  (correctness : ∀ {α β} putα getα putβ getβ,
+                   serial_inverse putα getα →
+                   serial_inverse putβ getβ →
+                 ∀ (w : f α β), decode getα getβ -<< encode putα putβ w = pure w)
 
 instance serial.serial2 {f α β} [serial2 f] [serial α] [serial β] : serial (f α β) :=
-{ encode := λ x, serial2.encode x,
-  decode := serial2.decode f,
-  correctness := serial2.correctness }
+{ encode := λ x, serial2.encode serial.encode serial.encode x,
+  decode := serial2.decode f (serial.decode _) (serial.decode _),
+  correctness := serial2.correctness _ _ _ _ serial.correctness serial.correctness }
 
 instance serial1.serial2 {f α} [serial2 f] [serial α] : serial1 (f α) :=
-{ encode := λ β inst x, @serial2.encode _ _ α β _ inst x,
-  decode := λ β inst, @serial2.decode f _ α β _ inst,
-  correctness := λ β inst, @serial2.correctness _ _ α β _ inst }
+{ encode := λ β put x, serial2.encode serial.encode put x,
+  decode := λ β get, serial2.decode f (serial.decode _) get,
+  correctness := λ β get put, serial2.correctness _ _ _ _ serial.correctness  }
 
 export serial (encode decode)
 
@@ -74,7 +79,7 @@ by split; intro h; cases h; refl
 open ulift
 
 protected def ulift.encode [serial α] (w : ulift.{v} α) : put_m :=
-liftable1.up equiv.punit_equiv_punit (encode (down w))
+liftable1.up _ equiv.punit_equiv_punit (encode (down w))
 
 protected def ulift.decode [serial α] : get_m (ulift α) :=
 get_m.up ulift.up (decode α)
@@ -154,6 +159,10 @@ structure serializer (α : Type u) (β : Type u) :=
 (encoder : α → put_m.{u})
 (decoder : get_m β)
 
+def serial.mk_serializer' (α) [serial α] : serializer α α :=
+{ encoder := encode,
+  decoder := decode α }
+
 namespace serializer
 
 def valid_serializer {α} (x : serializer α α) :=
@@ -221,9 +230,26 @@ instance {α} : is_lawful_applicative (serializer.{u} α) :=
 by{  constructor; intros; apply serializer.eq; try { ext };
      simp [(>>),pure_seq_eq_map,seq_assoc,bind_assoc],  }
 
+protected def up {β} (ser : serializer β β) : serializer (ulift.{u v} β) (ulift.{u v} β) :=
+{ encoder := pliftable.up' _ ∘ ser.encoder ∘ ulift.down,
+  decoder := get_m.up ulift.up ser.decoder }
+
+def ser_field_with {α β} (ser : serializer β β) (f : α → β) : serializer α β :=
+{ encoder := ser.encoder ∘ f,
+  decoder := ser.decoder }
+
+@[simp]
+def ser_field_with' {α β} (ser : serializer β β) (f : α → β) : serializer.{max u v} α (ulift.{v} β) :=
+ser_field_with ser.up (ulift.up ∘ f)
+
+@[simp]
 def ser_field {α β} [serial β] (f : α → β) : serializer α β :=
-{ encoder := λ x, encode (f x)
-, decoder := @decode _ _ }
+ser_field_with (serial.mk_serializer' β) f
+
+@[simp]
+lemma valid_mk_serializer (α) [serial α] :
+  valid_serializer (serial.mk_serializer' α) :=
+serial.correctness
 
 variables {α β σ γ : Type u} {ω : Type}
 
@@ -231,22 +257,22 @@ def there_and_back_again
   (y : serializer γ α) (w : γ) : option α :=
 y.decoder -<< y.encoder w
 
-lemma there_and_back_again_seq [serial α]
-  (x : serializer γ (α → β)) (f : α → β) (y : γ → α) (w : γ) (w' : β)
+lemma there_and_back_again_seq {ser : serializer α α}
+  {x : serializer γ (α → β)} {f : α → β} {y : γ → α} {w : γ} {w' : β}
   (h' : there_and_back_again x w = pure f)
-  (h  : w' = f (y w)) :
-  there_and_back_again (x <*> ser_field y) w = pure w' :=
+  (h : w' = f (y w))
+  (h₀ : valid_serializer ser) :
+  there_and_back_again (x <*> ser_field_with ser y) w = pure w' :=
 by { simp [there_and_back_again,(>>),seq_eq_bind_map] at *,
      rw [read_write_mono h',map_read_write],
-     rw [ser_field,serial.correctness], subst w', refl }
+     rw [ser_field_with,h₀], subst w', refl }
 
-@[simp]
-lemma there_and_back_again_map [serial α]
-  (f : α → β) (y : γ → α) (w : γ) :
-  there_and_back_again (f <$> ser_field y) w = pure (f $ y w) :=
-by rw [← pure_seq_eq_map,there_and_back_again_seq]; refl
+lemma there_and_back_again_map {ser : serializer α α}
+  {f : α → β} {y : γ → α} {w : γ}
+  (h₀ : valid_serializer ser) :
+  there_and_back_again (f <$> ser_field_with ser y) w = pure (f $ y w) :=
+by rw [← pure_seq_eq_map,there_and_back_again_seq]; refl <|> assumption
 
-@[simp]
 lemma there_and_back_again_pure (x : β) (w : γ) :
   there_and_back_again (pure x) w =
   pure x := rfl
@@ -258,28 +284,118 @@ lemma valid_serializer_of_there_and_back_again
 by { simp [valid_serializer,serial_inverse],
      repeat { rw forall_congr, intro }, refl }
 
+@[simp]
+lemma valid_serializer_up (x: serializer α α) :
+  valid_serializer (serializer.up.{v} x) ↔ valid_serializer x :=
+by { cases x, simp [valid_serializer,serializer.up,serial_inverse,equiv.forall_iff_forall equiv.ulift],
+     apply forall_congr, intro, dsimp [equiv.ulift,pliftable.up'],
+     rw up_read_write' _ equiv.ulift.symm, split; intro h,
+     { replace h := congr_arg (liftable1.down.{u} option (equiv.symm equiv.ulift)) h,
+       simp [liftable1.down_up] at h, simp [h], refl },
+     { simp [h], refl },
+     { intro, refl, } }
+
 open ulift
 
 def ser_field' {α β} [serial β] (f : α → β) : serializer.{max u v} α (ulift.{v} β) :=
 ser_field (up ∘ f)
 
-def of_serializer {α} (s : serializer α α) (h : ∀ w, there_and_back_again s w = pure w) : serial α :=
+def put₀ {α} (x : α) : put_m := pure punit.star
+def get₀ {α} : get_m α := get_m.fail
+
+def of_encoder {α} (x : α → put_m) : serializer α α :=
+⟨ x, get₀ ⟩
+
+def of_decoder {α} (x : get_m α) : serializer α α :=
+⟨ put₀, x ⟩
+
+section applicative
+
+@[simp]
+lemma encoder_ser_field (f : β → α) (x : serializer α α) (w : β) :
+  (ser_field_with x f).encoder w = x.encoder (f w) := rfl
+
+@[simp]
+lemma encoder_up (x : serializer α α) (w : ulift α) :
+  (serializer.up x).encoder w = pliftable.up' _ (x.encoder $ w.down) := rfl
+
+@[simp]
+lemma encoder_of_encoder (x : α → put_m) (w : α) :
+  (of_encoder x).encoder w = x w := rfl
+
+@[simp]
+lemma decoder_ser_field (f : β → α) (x : serializer α α) :
+  (ser_field_with x f).decoder = x.decoder := rfl
+
+@[simp]
+lemma decoder_up (x : serializer α α) :
+  (serializer.up x).decoder = (x.decoder).up ulift.up := rfl
+
+@[simp]
+lemma decoder_of_decoder (x : get_m α) :
+  (of_decoder x).decoder = x := rfl
+
+end applicative
+end serializer
+
+namespace serial
+
+open serializer
+
+def of_serializer {α} (s : serializer α α)
+  (h : ∀ w, there_and_back_again s w = pure w) : serial α :=
 { encode := s.encoder
 , decode := s.decoder
 , correctness := @h }
 
 def of_serializer₁ {f : Type u → Type v}
-  (s : Π α [serial α], serializer (f α) (f α))
-  (h : ∀ α [serial α] w, there_and_back_again (s α) w = pure w) : serial1 f :=
-{ encode := λ α inst, (@s α inst).encoder
-, decode := λ α inst, (@s α inst).decoder
-, correctness := @h }
+  (s : Π α, serializer α α → serializer (f α) (f α))
+  (h : ∀ α ser, valid_serializer ser →
+       ∀ w, there_and_back_again (s α ser) w = pure w)
+  (h₀ : ∀ {α} ser w, (s α (of_encoder (encoder ser))).encoder w = (s α ser).encoder w)
+  (h₁ : ∀ {α} ser, (s α (of_decoder (decoder ser))).decoder = (s α ser).decoder) : serial1 f :=
+{ encode := λ α put, (s α (of_encoder put)).encoder
+, decode := λ α get, (s α (of_decoder get)).decoder
+, correctness := by { introv hh, simp [h₀ ⟨put, get⟩,h₁ ⟨put,get⟩], apply h; assumption } }
 
 def of_serializer₂ {f : Type u → Type v → Type w}
-  (s : Π α β [serial α] [serial β], serializer (f α β) (f α β))
-  (h : ∀ α β [serial α] [serial β] w, there_and_back_again (s α β) w = pure w) : serial2 f :=
-{ encode := λ α β inst inst', (@s α β inst inst').encoder
-, decode := λ α β inst inst', (@s α β inst inst').decoder
-, correctness := @h }
+  (s : Π α β, serializer α α →
+              serializer β β →
+              serializer (f α β) (f α β))
+  (h : ∀ α β serα serβ, valid_serializer serα → valid_serializer serβ →
+       ∀ w, there_and_back_again (s α β serα serβ) w = pure w)
+  (h₀ : ∀ {α β} serα serβ w, (s α β (of_encoder (encoder serα)) (of_encoder (encoder serβ))).encoder w = (s α β serα serβ).encoder w)
+  (h₁ : ∀ {α β} serα serβ, (s α β (of_decoder (decoder serα)) (of_decoder (decoder serβ))).decoder = (s α β serα serβ).decoder) : serial2 f :=
+{ encode := λ α β putα putβ, (s α β (of_encoder putα) (of_encoder putβ)).encoder
+, decode := λ α β getα getβ, (s α β (of_decoder getα) (of_decoder getβ)).decoder
+, correctness := by { introv hα hβ, simp [h₀ ⟨putα,getα⟩ ⟨putβ,getβ⟩,h₁ ⟨putα,getα⟩ ⟨putβ,getβ⟩],
+                      apply h; assumption } }
 
-end serializer
+end serial
+
+namespace tactic
+open interactive
+open interactive.types
+open lean.parser
+
+meta def interactive.mk_serializer (p : parse texpr) : tactic unit :=
+do g ← mk_mvar,
+   refine ``(serial.of_serializer %%p %%g) <|>
+     refine ``(serial.of_serializer₁ (λ α ser, %%p) %%g _ _) <|>
+     refine ``(serial.of_serializer₂ (λ α β ser_α ser_β, %%p) %%g _ _),
+   gs ← get_goals,
+   set_goals [g],
+   vs ← intros,
+   cases vs.ilast,
+   iterate $
+     applyc ``serializer.there_and_back_again_map <|>
+     applyc ``serializer.there_and_back_again_pure <|>
+     applyc ``serializer.there_and_back_again_seq,
+  gs' ← get_goals,
+  set_goals (gs ++ gs'),
+  repeat $
+    intros >>
+    `[simp *] <|>
+    reflexivity
+
+end tactic

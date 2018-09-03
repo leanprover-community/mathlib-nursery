@@ -13,14 +13,7 @@ def prod.mk' : ulift.{v} α → ulift.{u} β → (α × β)
 open serializer serial
 
 instance : serial2 prod.{u v} :=
-of_serializer₂ (λ α β, by introsI; exact prod.mk' <$> ser_field' prod.fst <*> ser_field'.{v u} prod.snd)
-begin
-  intros,
-  apply there_and_back_again_seq,
-  apply there_and_back_again_map,
-  cases w, refl
-end
-
+by mk_serializer (prod.mk' <$> ser_field_with' ser_α prod.fst <*> ser_field_with' ser_β prod.snd)
 
 def sum.inl' : ulift.{v} α → (α ⊕ β)
 | ⟨ x ⟩ := sum.inl x
@@ -111,12 +104,12 @@ begin
     { norm_num }, { norm_num } }
 end }
 
-def list.encode {α : Type u} [serial α] (xs : list α) : put_m.{u} :=
-encode (up.{u} xs.length) >> xs.mmap encode >> pure punit.star
+def list.encode {α : Type u} (put : α → put_m) (xs : list α) : put_m.{u} :=
+encode (up.{u} xs.length) >> xs.mmap put >> pure punit.star
 
-def list.decode {α : Type u} [serial α] : get_m.{u} (list α) :=
+def list.decode {α : Type u} (get : get_m α) : get_m.{u} (list α) :=
 do n ← decode _,
-   (list.iota $ down.{u} n).mmap $ λ _, decode α
+   (list.iota $ down.{u} n).mmap $ λ _, get
 
 instance : serial1 list.{u} :=
 { encode := @list.encode,
@@ -129,7 +122,7 @@ begin
   induction w,
   { simp [nat.add_one,list.iota,mmap], refl },
   { simp [nat.add_one,list.iota,mmap,encode_decode_bind] with functor_norm,
-    rw read_write_mono_left w_ih, refl, }
+    rw [read_write_mono (a _),read_write_mono_left w_ih], refl, }
 end }
 
 instance {p : Prop} [decidable p] : serial (plift p) :=

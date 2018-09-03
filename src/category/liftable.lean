@@ -2,7 +2,7 @@
 import data.equiv.basic
 import tactic
 
-universes u₀ u₁ v₀ v₁ v₂ w w₀ w₁
+universes u₀ v₀ u₁ v₁ v₂ w w₀ w₁
 
 class liftable (α : Type u₀) (β : (Type v₀)) :=
   (lift {}   : α ≃ β)
@@ -13,9 +13,9 @@ class liftable (α : Type u₀) (β : (Type v₀)) :=
 instance ulift.liftable.ulift {α : Type w} : liftable (ulift.{u₀} α) (ulift.{u₁} α) :=
 ⟨ equiv.trans equiv.ulift equiv.ulift.symm ⟩
 
-class liftable1 (f : Type u₀ → Type u₁) (g : Type v₀ → Type v₁) :=
-  (up {}   : Π {α β}, α ≃ β → f α → g β)
-  (down {} : Π {α β}, α ≃ β → g β → f α)
+class liftable1 (f : (Type u₀ → Type u₁)) (g : Type v₀ → Type v₁) :=
+  (up   : Π {α β}, α ≃ β → f α → g β)
+  (down : Π {α β}, α ≃ β → g β → f α)
   (up_down : ∀ {α β} (F : α ≃ β) (x : g β), up F (down F x) = x)
   (down_up : ∀ {α β} (F : α ≃ β) (x : f α), down F (up F x) = x)
 
@@ -24,19 +24,19 @@ attribute [simp] liftable1.up_down liftable1.down_up
 namespace liftable
 
 @[reducible]
-def up' {f : Type v₀ → Type v₁} {g : Type (max u₀ v₀) → Type u₁} [liftable1 f g]
+def up' {f : Type v₀ → Type v₁} (g : Type (max u₀ v₀) → Type u₁) [liftable1 f g]
   {α} : f α → g (ulift.{u₀} α) :=
-liftable1.up equiv.ulift.symm
+liftable1.up g equiv.ulift.symm
 
 @[reducible]
 def down' {f : Type u₀ → Type u₁} {g : Type (max u₀ v₀) → Type v₁} [liftable1 f g]
   {α} : g (ulift α) → f α :=
-liftable1.down equiv.ulift.symm
+liftable1.down _ equiv.ulift.symm
 
 @[reducible]
 def shift' {f : Type (max w u₀) → Type u₁} {g : Type (max w v₀) → Type v₁} [liftable1 f g]
   {α : Type w} : g (ulift α) → f (ulift α) :=
-liftable1.down $ equiv.trans equiv.ulift equiv.ulift.symm
+liftable1.down _ $ equiv.trans equiv.ulift equiv.ulift.symm
 
 end liftable
 
@@ -63,8 +63,8 @@ def state_t.liftable' {s : Type u₀} {s' : Type u₁} {m m'} [functor m'] [func
   [liftable1 m m']
   (F : s ≃ s') :
   liftable1 (state_t s m) (state_t s' m') :=
-{ up   := λ _ _ G ⟨ f ⟩, ⟨ λ s, liftable1.up (equiv.prod_congr G F) (f $ F.symm s) ⟩
-, down := λ _ _ G ⟨ g ⟩, ⟨ λ s, liftable1.down (equiv.prod_congr G F) $ g (F s) ⟩
+{ up   := λ _ _ G ⟨ f ⟩, ⟨ λ s, liftable1.up _ (equiv.prod_congr G F) (f $ F.symm s) ⟩
+, down := λ _ _ G ⟨ g ⟩, ⟨ λ s, liftable1.down _ (equiv.prod_congr G F) $ g (F s) ⟩
 , up_down := by { rintros α β G ⟨ f ⟩, simp! }
 , down_up := by { rintros α β G ⟨ g ⟩, simp! [map_map,function.comp] } }
 
@@ -77,8 +77,8 @@ def reader_t.liftable' {s : Type u₀} {s' : Type u₁} {m : Type u₀ → Type 
   [liftable1 m m']
   (F : s ≃ s') :
   liftable1 (reader_t s m) (reader_t s' m') :=
-{ up   := λ _ _ G ⟨ f ⟩, ⟨ λ s, liftable1.up G (f $ F.symm s) ⟩
-, down := λ _ _ G ⟨ g ⟩, ⟨ λ s, liftable1.down G $ g $ F s ⟩
+{ up   := λ _ _ G ⟨ f ⟩, ⟨ λ s, liftable1.up _ G (f $ F.symm s) ⟩
+, down := λ _ _ G ⟨ g ⟩, ⟨ λ s, liftable1.down _ G $ g $ F s ⟩
 , up_down := by { rintros α β G ⟨ f ⟩, simp! }
 , down_up := by { rintros α β G ⟨ g ⟩, simp! [map_map,function.comp] } }
 
@@ -138,13 +138,13 @@ instance : liftable1 option.{u₀} option.{v₁} :=
 namespace pliftable
 
 @[reducible]
-def up' {f : Type v₀ → Type v₁} {g : Type u₀ → Type u₁} [liftable1 f g] :
+def up' {f : Type v₀ → Type v₁} (g : Type u₀ → Type u₁) [liftable1 f g] :
   f punit → g punit :=
-liftable1.up equiv.punit_equiv_punit
+liftable1.up g equiv.punit_equiv_punit
 
 @[reducible]
 def down' {f : Type u₀ → Type u₁} {g : Type v₀ → Type v₁} [liftable1 f g] :
   g punit → f punit :=
-liftable1.down equiv.punit_equiv_punit
+liftable1.down _ equiv.punit_equiv_punit
 
 end pliftable

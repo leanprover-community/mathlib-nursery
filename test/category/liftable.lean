@@ -10,9 +10,9 @@ do ⟨x⟩ ← get,
    return $ x+y
 
 open liftable
-
+#check @up'
 def my_prog : m (Σ t : Type, t) :=
-do ⟨ x ⟩ ← up' add,
+do ⟨ x ⟩ ← (up'.{1 0} m add),
    pure ⟨ℤ,x⟩
 
 #check add

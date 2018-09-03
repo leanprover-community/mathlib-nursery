@@ -377,7 +377,7 @@ begin
 end
 
 lemma up_read_write {α : Type u} {α' : Type (max u v)} (x : get_m α) (y : put_m) (f : α ≃ α') :
-  x.up f -<< up' y = liftable1.up f (x -<< y) :=
+  x.up f -<< up' put_m' y = liftable1.up option f (x -<< y) :=
 begin
   dsimp [up',liftable1.up],
   induction y generalizing x f,
@@ -397,7 +397,7 @@ end
 lemma up_read_write' {α : Type u} {α' : Type (max u v)}
   {x : get_m α} {y : put_m} (f : α → α') (f' : α ≃ α')
   (h : ∀ i, f i = f' i) :
-  x.up f -<< up' y = liftable1.up f' (x -<< y) :=
+  x.up f -<< up' put_m' y = liftable1.up option f' (x -<< y) :=
 begin
   rw ← up_read_write, congr, ext, apply h
 end

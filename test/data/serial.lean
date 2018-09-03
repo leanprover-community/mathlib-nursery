@@ -4,15 +4,23 @@ import data.serial
 open serial serializer
 
 structure point :=
-(x y : unsigned)
+(x y z : ℕ)
 
 instance : serial point :=
-of_serializer (point.mk <$> ser_field point.x <*> ser_field point.y)
+by mk_serializer (point.mk <$> ser_field point.x <*> ser_field point.y <*> ser_field point.z)
+
+example : serial point :=
 begin
-  intro,
+  apply of_serializer (point.mk <$> ser_field point.x <*> ser_field point.y <*> ser_field point.z),
+  intro w, cases w,
+  apply there_and_back_again_seq,
   apply there_and_back_again_seq,
   apply there_and_back_again_map,
-  cases w, refl
+  { simp },
+  { refl },
+  { simp },
+  { refl },
+  { simp },
 end
 
 @[derive serial]
