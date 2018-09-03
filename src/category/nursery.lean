@@ -44,22 +44,3 @@ by congr; ext; simp [seq_eq_bind_map] with functor_norm
 end monad
 
 attribute [functor_norm] bind_assoc has_bind.and_then map_bind seq_left_eq seq_right_eq
-
-namespace sum
-
-variables {e : Type v} {α β : Type u}
-
-protected def seq : Π (x : sum e (α → β)) (f : sum e α), sum e β
-| (sum.inl e) _ := sum.inl e
-| (sum.inr f) x := f <$> x
-
-instance : applicative (sum e) :=
-{ seq := @sum.seq e,
-  pure := @sum.inr e }
-
-instance : is_lawful_applicative (sum e) :=
-by constructor; intros;
-   casesm* _ ⊕ _; simp [(<*>),sum.seq,pure,(<$>)];
-   refl
-
-end sum
