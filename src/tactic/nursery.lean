@@ -12,6 +12,13 @@ end expr
 
 namespace tactic
 
+meta def trace_error {α} (tac : tactic α) : tactic α :=
+λ s, match tac s with
+     | r@(result.success _ _) := r
+     | (result.exception (some msg) pos s') := (trace (msg ()) >> result.exception (some msg) pos) s'
+     | r@(result.exception none _ _) := r
+     end
+
 meta def is_type (e : expr) : tactic bool :=
 do (expr.sort _) ← infer_type e | pure ff,
    pure tt
@@ -85,6 +92,28 @@ do cxt ← list.map to_implicit <$> local_context,
    let univ := t'.collect_univ_params,
    add_decl $ declaration.defn n univ t' d' (reducibility_hints.regular 1 tt) trusted,
    r <$ (applyc n; assumption)
+
+open expr list
+
+meta def unpi : expr → tactic (list expr × expr)
+| (pi n bi d b) :=
+  do v ← mk_local' n bi d,
+     prod.map (cons v) id <$> unpi (b.instantiate_var v)
+| e := pure ([],e)
+
+meta def unify_app_aux : expr → expr → list expr → tactic expr
+| e (pi _ _ d b) (a :: as) :=
+do t ← infer_type a,
+   unify t d,
+   e' ← head_beta (e a),
+   b' ← whnf (b.instantiate_var a),
+   unify_app_aux e' b' as
+| e t (_ :: _) := fail "too many arguments"
+| e _ [] := pure e
+
+meta def unify_app (e : expr) (args : list expr) : tactic expr :=
+do t ← infer_type e >>= whnf,
+   unify_app_aux e t args
 
 end tactic
 
