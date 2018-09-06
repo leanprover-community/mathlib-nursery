@@ -59,6 +59,8 @@ def x := node2 2 (node3 77777777777777 leaf leaf (node2 1 leaf leaf)) leaf
 #eval (deserialize _ (serialize x) = some x : bool)
 -- tt
 
+open medium
+
 example (x : tree ℕ) : deserialize _ (serialize x) = some x :=
 by { dsimp [serialize,deserialize],
      rw [eval_eval,serial.correctness],

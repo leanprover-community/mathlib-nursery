@@ -155,6 +155,8 @@ solve1 $ do
     try $ reflexivity },
   return ()
 
+open medium
+
 meta def mk_serial_correctness (is_rec : bool) (n encode_n decode_n : name) : tactic unit :=
 do let rules := [``has_bind.and_then,
                  ``encode_decode_bind,``encode_decode_bind',

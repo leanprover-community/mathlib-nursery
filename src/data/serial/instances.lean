@@ -30,6 +30,8 @@ select_tag
   [ (1,sum.inl' <$> decode _),
     (2,sum.inr' <$> decode _) ]
 
+open medium (hiding put_m put_m' get_m)
+
 instance {α β} [serial.{u} α] [serial.{v} β] : serial (α ⊕ β) :=
 { encode := sum.encode,
   decode := sum.decode,
@@ -97,7 +99,7 @@ begin
       subst w_n, norm_num [word_sz], },
     norm_num [word_sz,unsigned_sz,nat.succ_eq_add_one], },
   { simp [nat.decode_aux], rw if_neg,
-    simp, simp [pure,read_write], congr, rw nat.add_mul_div_left,
+    simp, dsimp [pure,read_write], congr, rw nat.add_mul_div_left,
     norm_num, replace h := le_antisymm (le_of_not_lt h) (nat.zero_le _),
     have := nat.mod_add_div w_n word_sz,
     simp [h] at this, exact this,
@@ -105,7 +107,7 @@ begin
 end }
 
 def list.encode {α : Type u} (put : α → put_m) (xs : list α) : put_m.{u} :=
-encode (up.{u} xs.length) >> xs.mmap put >> pure punit.star
+(encode (up.{u} xs.length) >> xs.mmap put >> pure punit.star : put_m' _)
 
 def list.decode {α : Type u} (get : get_m α) : get_m.{u} (list α) :=
 do n ← decode _,
@@ -126,6 +128,6 @@ begin
 end }
 
 instance {p : Prop} [decidable p] : serial (plift p) :=
-{ encode := λ w, pure punit.star,
+{ encode := λ w, (pure punit.star : put_m' _),
   decode := if h : p then pure ⟨ h ⟩ else get_m.fail,
   correctness := by { rintros ⟨ h ⟩, rw dif_pos h, refl } }

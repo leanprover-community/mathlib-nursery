@@ -9,16 +9,20 @@ import data.serial.medium
 
 universes u v w
 
+abbreviation put_m' := medium.put_m'.{u} unsigned
+abbreviation put_m  := medium.put_m'.{u} unsigned punit
+abbreviation get_m  := medium.get_m.{u} unsigned
+
 def serial_inverse {α : Type u} (encode : α → put_m) (decode : get_m α) : Prop :=
 ∀ w, decode -<< encode w = pure w
 
 class serial (α : Type u) :=
-  (encode : α → put_m.{u})
+  (encode : α → put_m)
   (decode : get_m α)
   (correctness : ∀ w, decode -<< encode w = pure w)
 
 class serial1 (f : Type u → Type v) :=
-  (encode : Π {α}, (α → put_m.{u}) → f α → put_m.{v})
+  (encode : Π {α}, (α → put_m) → f α → put_m)
   (decode : Π {α}, get_m α → get_m (f α))
   (correctness : ∀ {α} put get, serial_inverse.{u} put get →
                  ∀ (w : f α), decode get -<< encode put w = pure w)
@@ -50,7 +54,7 @@ export serial (encode decode)
 
 namespace serial
 
-open function
+open function medium (hiding put_m get_m)
 
 variables {α β σ γ : Type u} {ω : Type}
 
@@ -73,13 +77,13 @@ by { rw [read_write_mono_left]; rw serial.correctness; refl }
 
 lemma encode_decode_pure
   (w w' : α) (u : punit) :
-  (pure w) -<< (pure u) = pure w' ↔ w = w' :=
+  (pure w : get_m α) -<< (pure u) = pure w' ↔ w = w' :=
 by split; intro h; cases h; refl
 
 open ulift
 
 protected def ulift.encode [serial α] (w : ulift.{v} α) : put_m :=
-liftable1.up _ equiv.punit_equiv_punit (encode (down w))
+(liftable1.up _ equiv.punit_equiv_punit (encode (down w) : medium.put_m' unsigned _) : medium.put_m' unsigned _)
 
 protected def ulift.decode [serial α] : get_m (ulift α) :=
 get_m.up ulift.up (decode α)
@@ -98,7 +102,7 @@ instance unsigned.serial : serial unsigned :=
 , decode := get_m.read get_m.pure
 , correctness := by introv; refl }
 
-def write_word (w : unsigned) : put_m.{u} :=
+def write_word (w : unsigned) : put_m :=
 encode (up.{u} w)
 
 @[simp] lemma loop_read_write_word {α β γ : Type u}
@@ -182,13 +186,13 @@ variables {α : Type u} {i j : Type u}
 variables (x : serializer α (i → j))
 variables (y : serializer α i)
 
-def encoder := λ (k : α), x.encoder k >> y.encoder k
+def encoder := λ (k : α), (x.encoder k >> y.encoder k : put_m' _)
 def decoder := x.decoder <*> y.decoder
 
 end serializer.seq
 
 instance {α : Type u} : applicative (serializer.{u} α) :=
-{ pure := λ i x, { encoder := λ _, return punit.star, decoder := pure x }
+{ pure := λ i x, { encoder := λ _, (return punit.star : put_m' _), decoder := pure x }
 , seq := λ i j x y,
   { encoder := serializer.seq.encoder x y
   , decoder := serializer.seq.decoder x y } }
@@ -211,7 +215,7 @@ lemma decoder_seq (f : serializer σ (α → β)) (x : serializer σ α) :
 
 @[simp]
 lemma encoder_pure (x : β) (w : σ) :
-  (pure x : serializer σ β).encoder w = pure punit.star := rfl
+  (pure x : serializer σ β).encoder w = (pure punit.star : put_m' _) := rfl
 
 @[simp]
 lemma encoder_map (f : α → β) (w : σ) (x : serializer σ α) :
@@ -219,7 +223,7 @@ lemma encoder_map (f : α → β) (w : σ) (x : serializer σ α) :
 
 @[simp]
 lemma encoder_seq (f : serializer σ (α → β)) (x : serializer σ α) (w : σ) :
-  (f <*> x : serializer σ β).encoder w = f.encoder w >> x.encoder w := rfl
+  (f <*> x : serializer σ β).encoder w = (f.encoder w >> x.encoder w : put_m' _) := rfl
 
 end lawful_applicative
 
@@ -232,7 +236,7 @@ by{  constructor; intros; apply serializer.eq; try { ext };
 
 protected def up {β} (ser : serializer β β) : serializer (ulift.{u v} β) (ulift.{u v} β) :=
 { encoder := pliftable.up' _ ∘ ser.encoder ∘ ulift.down,
-  decoder := get_m.up ulift.up ser.decoder }
+  decoder := medium.get_m.up ulift.up ser.decoder }
 
 def ser_field_with {α β} (ser : serializer β β) (f : α → β) : serializer α β :=
 { encoder := ser.encoder ∘ f,
@@ -256,6 +260,8 @@ variables {α β σ γ : Type u} {ω : Type}
 def there_and_back_again
   (y : serializer γ α) (w : γ) : option α :=
 y.decoder -<< y.encoder w
+
+open medium (hiding put_m put_m' get_m)
 
 lemma there_and_back_again_seq {ser : serializer α α}
   {x : serializer γ (α → β)} {f : α → β} {y : γ → α} {w : γ} {w' : β}
@@ -300,7 +306,7 @@ open ulift
 def ser_field' {α β} [serial β] (f : α → β) : serializer.{max u v} α (ulift.{v} β) :=
 ser_field (up ∘ f)
 
-def put₀ {α} (x : α) : put_m := pure punit.star
+def put₀ {α} (x : α) : put_m.{u} := (pure punit.star : put_m' _)
 def get₀ {α} : get_m α := get_m.fail
 
 def of_encoder {α} (x : α → put_m) : serializer α α :=

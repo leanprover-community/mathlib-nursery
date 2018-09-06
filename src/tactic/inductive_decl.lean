@@ -83,18 +83,6 @@ do let t := (const decl.name $ decl.u_names.map level.param).mk_app $ decl.param
    e ← instantiate_mvars e,
    add_decl $ mk_definition (decl.mk_name "no_confusion_type") (u :: decl.u_names) p e
 
--- #check @eq.rec
-
--- @[reducible]
--- protected def get_m.head_t_.no_confusion : Π {α : Type u_1} {P : Sort l} {v1 v2 : head_t_ α}, v1 = v2 → get_m.head_t_.no_confusion_type P v1 v2 :=
--- λ {α : Type u_1} {P : Sort l} {v1 v2 : head_t_ α} (h12 : v1 = v2),
---   eq.rec
---     (λ (h11 : v1 = v1),
---        get_m.head_t_.cases_on v1 (λ (a : P), a) (λ (a : α) (a_1 : a = a → P), a_1 _) (λ (a : P), a))
---     h12
---     h12
-
-
 meta def mk_no_confusion (decl : inductive_type) : tactic unit :=
 do let t := (const decl.name $ decl.u_names.map level.param).mk_app $ decl.params ++ decl.idx,
    u ← get_unused_name `u,
