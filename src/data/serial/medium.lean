@@ -105,6 +105,11 @@ def get_m.eval : Π {α}, list w → get_m w α → option α
   f x₀ ww >>= @sum.rec _ _ (λ _, get_m w α) g (get_m.loop f g)
 | α (w :: ws) _ := none
 
+def write_word (x : w) : put_m'.{u} w punit :=
+put_m'.write x (λ _, put_m'.pure punit.star)
+
+def read_word : get_m.{u} w (ulift w) :=
+get_m.read (get_m.pure ∘ ulift.up)
 
 def read_write : Π {α : Type u}, get_m w α → put_m'.{u} w punit → option α
 | ._ (get_m.pure x) (put_m'.pure _) := some x
@@ -249,7 +254,7 @@ begin
     simp [read_write_loop_bind,x₁_ih],
     rw [x₁_ih _ _ _ h], }
 end
-set_option pp.all true
+
 lemma read_write_mono {α β : Type u} {i : α}
       {x₀ : get_m w α} {f₀ : α → get_m w β}
       {x₁ : put_m w} {f₁ : punit → put_m w}
@@ -269,6 +274,14 @@ lemma read_write_mono_left {α β} {i : α}
       (h : x₀ -<< x₁ = some i) :
   (x₀ >>= f₀) -<< x₁ = f₀ i -<< pure punit.star :=
 by rw ← read_write_mono h; simp
+
+@[simp]
+lemma read_write_word {α} (x : w) (f : ulift w → get_m w α) (f' : punit → put_m w) :
+  (read_word >>= f) -<< (write_word x >>= f') = f ⟨x⟩ -<< f' punit.star := rfl
+
+@[simp]
+lemma read_write_word' {α} (x : w) (f : ulift w → get_m w α) :
+  (read_word >>= f) -<< write_word x = f ⟨x⟩ -<< pure punit.star := rfl
 
 lemma eval_eval {α}
       (x₀ : get_m w α) (x₁ : put_m w)  :

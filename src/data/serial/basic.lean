@@ -54,7 +54,8 @@ export serial (encode decode)
 
 namespace serial
 
-open function medium (hiding put_m get_m)
+open function
+export medium (hiding put_m get_m put_m')
 
 variables {α β σ γ : Type u} {ω : Type}
 
@@ -102,8 +103,8 @@ instance unsigned.serial : serial unsigned :=
 , decode := get_m.read get_m.pure
 , correctness := by introv; refl }
 
-def write_word (w : unsigned) : put_m :=
-encode (up.{u} w)
+-- protected def write_word (w : unsigned) : put_m :=
+-- encode (up.{u} w)
 
 @[simp] lemma loop_read_write_word {α β γ : Type u}
   (w : unsigned) (x : α) (f : α → unsigned → get_m (β ⊕ α)) (g : β → get_m γ)
@@ -116,8 +117,8 @@ encode (up.{u} w)
   get_m.loop f g x -<< (write_word w) =
   (f x w >>= @sum.rec _ _ (λ _, get_m γ) g (get_m.loop f g)) -<< pure punit.star := rfl
 
-def read_word : get_m.{u} (ulift unsigned) :=
-decode _
+-- protected def read_word : get_m.{u} (ulift unsigned) :=
+-- decode _
 
 def select_tag' (tag : unsigned) : list (unsigned × get_m α) → get_m α
 | [] := get_m.fail
@@ -132,20 +133,20 @@ lemma read_write_tag_hit {w w' : unsigned} {x : get_m α}
   {xs : list (unsigned × get_m α)} {y : put_m}
   (h : w = w') :
   select_tag ( (w,x) :: xs ) -<< (write_word w' >> y) = x -<< y :=
-by subst w'; simp [select_tag,(>>),read_word,write_word,encode_decode_bind,select_tag']
+by subst w'; simp [select_tag,(>>),encode_decode_bind,select_tag']
 
 lemma read_write_tag_hit' {w w' : unsigned} {x : get_m α}
   {xs : list (unsigned × get_m α)}
   (h : w = w') :
   select_tag ( (w,x) :: xs ) -<< (write_word w') = x -<< pure punit.star :=
-by subst w'; simp [select_tag,(>>),read_word,write_word,encode_decode_bind',select_tag']
+by subst w'; simp [select_tag,(>>),encode_decode_bind',select_tag']
 
 @[simp]
 lemma read_write_tag_miss {w w' : unsigned} {x : get_m α}
   {xs : list (unsigned × get_m α)} {y : put_m}
   (h : w ≠ w') :
   select_tag ( (w,x) :: xs ) -<< (write_word w' >> y) = select_tag xs -<< (write_word w' >> y) :=
-by simp [select_tag,(>>),read_word,write_word,encode_decode_bind,select_tag',*]
+by simp [select_tag,(>>),encode_decode_bind,select_tag',*]
 
 def recursive_parser {α} : ℕ → (get_m α → get_m α) → get_m α
 | 0 _ := get_m.fail
