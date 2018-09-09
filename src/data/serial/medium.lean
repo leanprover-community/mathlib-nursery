@@ -61,6 +61,11 @@ def get_m.map : Π {α β : Type u}, (α → β) → get_m w α → get_m w β
 | _ _ f (get_m.read g) := get_m.read $ λ w, get_m.map f (g w)
 | _ _ h (get_m.loop f g x₀) := get_m.loop f (λ r, get_m.map h (g r)) x₀
 
+@[simp]
+def get_m.loop.rest {α β γ : Type u} (f : β → w → get_m w (α ⊕ β)) (g : α → get_m w γ) : α ⊕ β → get_m w γ
+| (sum.inr x) := get_m.loop f g x
+| (sum.inl x) := g x
+
 instance get_m.functor : functor.{u} (get_m w) :=
 { map := @get_m.map _ }
 
@@ -73,20 +78,20 @@ def get_m.seq {α β : Type u} : Π (f : get_m w (α → β)) (x : get_m w α), 
 -- , seq := @get_m.seq }
 open function
 
-instance get_m.is_lawful_functor : is_lawful_functor.{u} (get_m w) :=
+instance : is_lawful_functor.{u} (get_m w) :=
 by { constructor; intros;
      dsimp [(<$>),get_m.seq];
      induction x;
      try { refl };
      simp [get_m.map,*]; ext }
 
-instance get_m.monad : monad (get_m w) :=
+instance : monad (get_m w) :=
 { to_functor := get_m.functor
 , pure := @get_m.pure w
 , bind := @get_m.bind w }
 
-instance get_m.is_lawful_monad : is_lawful_monad.{u} (get_m w) :=
-{ to_is_lawful_functor := get_m.is_lawful_functor,
+instance : is_lawful_monad.{u} (get_m w) :=
+{ to_is_lawful_functor := by apply_instance,
   bind_assoc := by { intros, dsimp [(>>=)],
                      induction x; try { refl }; simp [get_m.bind,*], },
   bind_pure_comp_eq_map := by { intros, dsimp [(>>=),(<$>)],
@@ -96,13 +101,21 @@ instance get_m.is_lawful_monad : is_lawful_monad.{u} (get_m w) :=
                           induction x; try {refl}; simp [get_m.bind,get_m.map,*], },
   pure_bind := by intros; refl }
 
+def get_m.or_else {α} : get_m w α → get_m w α → get_m w α
+| get_m.fail x := x
+| x y := x
+
+instance : alternative.{u} (get_m w) :=
+{ failure := @get_m.fail _,
+  orelse := @get_m.or_else _ }
+
 def get_m.eval : Π {α}, list w → get_m w α → option α
 | _ [] (get_m.pure x) := pure x
 | _ [] _  := none
 | α (w :: ws) (get_m.read f) := get_m.eval ws (f w)
 | α (ww :: ws) (get_m.loop f g x₀) :=
   get_m.eval ws $
-  f x₀ ww >>= @sum.rec _ _ (λ _, get_m w α) g (get_m.loop f g)
+  f x₀ ww >>= get_m.loop.rest f g
 | α (w :: ws) _ := none
 
 def write_word (x : w) : put_m'.{u} w punit :=
@@ -111,13 +124,20 @@ put_m'.write x (λ _, put_m'.pure punit.star)
 def read_word : get_m.{u} w (ulift w) :=
 get_m.read (get_m.pure ∘ ulift.up)
 
+open ulift
+
+def expect_word [decidable_eq w] (x : w) : get_m.{u} w punit :=
+do w' ← read_word,
+   if x = down w' then pure punit.star
+                  else failure
+
 def read_write : Π {α : Type u}, get_m w α → put_m'.{u} w punit → option α
 | ._ (get_m.pure x) (put_m'.pure _) := some x
 | _ _ (put_m'.pure _) := none
 | ._ (get_m.read f) (put_m'.write w g) := read_write (f w) (g punit.star)
 | α (@get_m.loop _ α' β γ f g x₀) (put_m'.write ww h) :=
   read_write
-    (f x₀ ww >>= @sum.rec α' β (λ _, get_m w α) g (get_m.loop f g))
+    (f x₀ ww >>= get_m.loop.rest f g)
     (h punit.star)
 | _ _ (put_m'.write w g) := none
 
@@ -125,7 +145,7 @@ def read_write' : Π {α : Type u}, get_m w α → put_m'.{u} w punit → option
 | _ (get_m.read f) (put_m'.write w g) := read_write' (f w) (g punit.star)
 | α (@get_m.loop _ α' β γ f g x₀) (put_m'.write ww h) :=
   read_write'
-    (f x₀ ww >>= @sum.rec α' β (λ _, get_m w α) g (get_m.loop f g))
+    (f x₀ ww >>= get_m.loop.rest f g)
     (h punit.star)
 -- | _ (get_m.pure x) m@(put_m'.write w g) := some (x,m)
 | _ (get_m.pure x) m := some (x,m)
@@ -186,7 +206,7 @@ lemma read_write_loop_bind {α β γ φ : Type u} (i : α)
       (f₀ : φ → get_m w β) (f₁ : β → get_m w γ)
       (m : punit → put_m w) (ww : w) :
   (get_m.loop body f₀ i >>= f₁) -<<< put_m'.write ww m =
-  (body i ww >>= @sum.rec φ α (λ _, get_m w β) f₀ (get_m.loop body f₀) >>= f₁) -<<< m punit.star :=
+  (body i ww >>= get_m.loop.rest body f₀ >>= f₁) -<<< m punit.star :=
 begin
   rw bind_assoc,
   simp [(>>=),get_m.bind,read_write'],
@@ -280,8 +300,26 @@ lemma read_write_word {α} (x : w) (f : ulift w → get_m w α) (f' : punit → 
   (read_word >>= f) -<< (write_word x >>= f') = f ⟨x⟩ -<< f' punit.star := rfl
 
 @[simp]
-lemma read_write_word' {α} (x : w) (f : ulift w → get_m w α) :
+lemma read_write_word' {α} (x : w) (f : ulift w → get_m w α) (f' : put_m w) :
+  (read_word >>= f) -<< (write_word x >> f') = f ⟨x⟩ -<< f' := rfl
+
+@[simp]
+lemma read_write_word'' {α} (x : w) (f : ulift w → get_m w α) :
   (read_word >>= f) -<< write_word x = f ⟨x⟩ -<< pure punit.star := rfl
+
+@[simp]
+lemma read_write_pure {α} (x : α) (y : punit) (f : ulift w → get_m w α) :
+  (pure x : get_m w α) -<< pure y = pure x := rfl
+
+@[simp]
+lemma read_write_loop_word {α β γ : Type u} (σ₀ : α) (x : w)
+  (f : α → w → get_m w (β ⊕ α)) (g : β → get_m w γ)
+  (f' : punit → put_m w) :
+  get_m.loop f g σ₀ -<< (write_word x >>= f') =
+  (f σ₀ x >>= get_m.loop.rest f g)
+    -<< f' punit.star := rfl
+
+#check @read_write_loop_word
 
 lemma eval_eval {α}
       (x₀ : get_m w α) (x₁ : put_m w)  :

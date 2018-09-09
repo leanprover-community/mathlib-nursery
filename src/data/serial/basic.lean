@@ -110,12 +110,12 @@ instance unsigned.serial : serial unsigned :=
   (w : unsigned) (x : α) (f : α → unsigned → get_m (β ⊕ α)) (g : β → get_m γ)
   (rest : punit → put_m) :
   get_m.loop f g x -<< (write_word w >>= rest) =
-  (f x w >>= @sum.rec _ _ (λ _, get_m γ) g (get_m.loop f g)) -<< rest punit.star := rfl
+  (f x w >>= get_m.loop.rest f g) -<< rest punit.star := rfl
 
 @[simp] lemma loop_read_write_word' {α β γ : Type u}
   (w : unsigned) (x : α) (f : α → unsigned → get_m (β ⊕ α)) (g : β → get_m γ)  :
   get_m.loop f g x -<< (write_word w) =
-  (f x w >>= @sum.rec _ _ (λ _, get_m γ) g (get_m.loop f g)) -<< pure punit.star := rfl
+  (f x w >>= get_m.loop.rest f g) -<< pure punit.star := rfl
 
 -- protected def read_word : get_m.{u} (ulift unsigned) :=
 -- decode _

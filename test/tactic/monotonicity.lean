@@ -205,7 +205,6 @@ begin
   ac_mono,
   ac_mono,
   ac_mono,
-  solve_by_elim
 end
 
 example (x y z k m n : ℕ)

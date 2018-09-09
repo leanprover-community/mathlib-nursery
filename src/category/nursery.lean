@@ -41,4 +41,4 @@ by congr; ext; simp [seq_eq_bind_map] with functor_norm
 
 end monad
 
-attribute [functor_norm] bind_assoc has_bind.and_then map_bind
+attribute [functor_norm] bind_assoc has_bind.and_then map_bind seq_left_eq seq_right_eq
