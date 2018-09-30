@@ -1,6 +1,30 @@
-
+/-
+Copyright (c) 2018 Simon Hudon. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Author: Simon Hudon
+-/
 import data.list.basic
 import tactic.basic
+
+namespace name
+
+def append_suffix : name → string → name
+| (mk_string s n) s' := mk_string (s ++ s') n
+| n _ := n
+
+end name
+
+namespace level
+
+meta def fold_mvar {α} : level → (name → α → α) → α → α
+| zero f := id
+| (succ a) f := fold_mvar a f
+| (param a) f := id
+| (mvar a) f := f a
+| (max a b) f := fold_mvar a f ∘ fold_mvar b f
+| (imax a b) f := fold_mvar a f ∘ fold_mvar b f
+
+end level
 
 namespace expr
 
@@ -8,15 +32,41 @@ meta def is_mvar : expr → bool
 | (mvar _ _ _) := tt
 | _            := ff
 
+meta def replace_all (e : expr) (p : expr → Prop) [decidable_pred p] (r : expr) : expr :=
+e.replace $ λ e i, guard (p e) >> pure (r.lift_vars 0 i)
+
+meta def const_params : expr → list level
+| (const _ ls) := ls
+| _ := []
+
+meta def collect_meta_univ (e : expr) : list name :=
+native.rb_set.to_list $ e.fold native.mk_rb_set $ λ e' i s,
+match e' with
+| (sort u) := u.fold_mvar (flip native.rb_set.insert) s
+| (const _ ls) := ls.foldl (λ s' l, l.fold_mvar (flip native.rb_set.insert) s') s
+| _ := s
+end
+
 end expr
 
 namespace tactic
+
+meta def unify_univ (u u' : level) : tactic unit :=
+unify (expr.sort u) (expr.sort u')
+
+meta def add_decl' (d : declaration) : tactic expr :=
+do add_decl d,
+   pure $ expr.const d.to_name $ d.univ_params.map level.param
+
+meta def renew : expr → tactic expr
+| (expr.local_const uniq pp bi t) := mk_local' pp bi t
+| e := fail format!"{e} is not a local constant"
 
 meta def trace_error {α} (tac : tactic α) : tactic α :=
 λ s, match tac s with
      | r@(result.success _ _) := r
      | (result.exception (some msg) pos s') := (trace (msg ()) >> result.exception (some msg) pos) s'
-     | r@(result.exception none _ _) := r
+     | (result.exception none pos s') := (trace "no msg" >> result.exception none pos) s'
      end
 
 meta def is_type (e : expr) : tactic bool :=
@@ -93,7 +143,17 @@ do cxt ← list.map to_implicit <$> local_context,
    add_decl $ declaration.defn n univ t' d' (reducibility_hints.regular 1 tt) trusted,
    r <$ (applyc n; assumption)
 
-open expr list
+open expr list nat
+
+meta def remove_intl_const : expr → tactic expr
+| v@(local_const uniq pp bi _) :=
+  do t ← infer_type v,
+     pure $ local_const uniq pp bi t
+| e := pure e
+
+meta def intron' : ℕ → tactic (list expr)
+| 0 := pure []
+| (succ n) := (::) <$> intro1 <*> intron' n
 
 meta def unpi : expr → tactic (list expr × expr)
 | (pi n bi d b) :=
@@ -121,6 +181,8 @@ namespace tactic.interactive
 
 open lean lean.parser interactive interactive.types tactic
 
+local postfix `*`:9000 := many
+
 meta def guard_expr_eq' (t : expr) (p : parse $ tk ":=" *> texpr) : tactic unit :=
 do e ← to_expr p, is_def_eq t e
 
@@ -130,5 +192,13 @@ We use this tactic for writing tests.
 -/
 meta def guard_target' (p : parse texpr) : tactic unit :=
 do t ← target, guard_expr_eq' t p
+
+meta def clear_except (xs : parse ident *) : tactic unit :=
+do let ns := name_set.of_list xs,
+   local_context >>= mmap' (λ h : expr,
+     when (¬ ns.contains h.local_pp_name) $
+       try $ tactic.clear h) ∘ list.reverse
+
+meta def splita := split; [skip, assumption]
 
 end tactic.interactive
