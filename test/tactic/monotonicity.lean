@@ -41,8 +41,6 @@ begin
     mono, -- apply add_le_add, refl
     -- ⊢ k + 3 ≤ k + 4
     mono },
-  { -- ⊢ -y ≤ -z
-    mono /- apply neg_le_neg -/ }
 end
 
 example (x y z : ℤ)
@@ -51,7 +49,7 @@ example (x y z : ℤ)
 : (1 + 3 + x) - y ≤ (1 + 4 + x) - z :=
 begin
   transitivity (1 + 3 + x - z),
-  { mono, mono },
+  { mono },
   { mono, mono },
 end
 
@@ -331,7 +329,7 @@ end
 example {x y z w : ℕ} : true :=
 begin
   have : x * y ≤ z * w,
-  { mono using [0 ≤ z,0 ≤ y],
+  { mono with [0 ≤ z,0 ≤ y],
     { guard_target 0 ≤ z, admit },
     { guard_target 0 ≤ y, admit },
     guard_target' x ≤ z, admit,

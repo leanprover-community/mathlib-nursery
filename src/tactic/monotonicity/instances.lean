@@ -90,6 +90,26 @@ begin
   apply nat.add_lt_add_left h
 end
 
+@[monotonic]
+lemma imp_imp_imp {a b c d : Prop}
+  (h₀ : c → a) (h₁ : b → d) :
+  (a → b) → (c → d) :=
+assume (h₂ : a → b),
+calc  c
+    → a : h₀
+... → b : h₂
+... → d : h₁
+
+@[monotonic]
+lemma le_implies_le_of_le_of_le {a b c d : α} [preorder α]
+   (h₀ : c ≤ a) (h₁ : b ≤ d) :
+  a ≤ b -> c ≤ d :=
+assume h₂ : a ≤ b,
+calc  c
+    ≤ a : h₀
+... ≤ b : h₂
+... ≤ d : h₁
+
 end monotonicity
 
 open list

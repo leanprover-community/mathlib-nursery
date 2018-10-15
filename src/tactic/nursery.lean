@@ -6,6 +6,20 @@ Author: Simon Hudon
 import data.list.basic
 import tactic.basic
 
+namespace native
+namespace rb_map
+
+meta def find_def {α β} [has_lt α] [decidable_rel ((<) : α → α → Prop)]
+  (x : β) (m : rb_map α β) (k : α) :=
+(m.find k).get_or_else x
+
+meta def insert_cons {α β} [has_lt α] [decidable_rel ((<) : α → α → Prop)]
+  (k : α) (x : β) (m : rb_map α (list β)) : rb_map α (list β) :=
+m.insert k (x :: m.find_def [] k)
+
+end rb_map
+end native
+
 namespace name
 
 def append_suffix : name → string → name
