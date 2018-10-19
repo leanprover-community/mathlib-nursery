@@ -1,10 +1,11 @@
 import data.sigma.basic
+import tactic.ext
 
 namespace sigma
 universes u v
 
 section
-variables {α : Type u} {β : α → Type v}
+variables {α : Type u} {β β' : α → Type v}
 
 theorem eq_fst {s₁ s₂ : sigma β} : s₁ = s₂ → s₁.1 = s₂.1 :=
 by cases s₁; cases s₂; cc
@@ -136,6 +137,16 @@ theorem fst_injective_comp (gi : fst_injective g) (fi : fst_injective f) :
 @[simp] theorem embedding.trans_apply (f : β₁ s↪ β₂) (g : β₂ s↪ β₃) (s : sigma β₁) :
   (f.trans g) s = g (f s) :=
 rfl
+
+@[extensionality]
+lemma ext {x₀ x₁ : sigma β₁}
+  (h₀ : x₀.1 = x₁.1)
+  (h₁ : x₀.1 = x₁.1 → x₀.2 == x₁.2) :
+  x₀ = x₁ :=
+by casesm* sigma _; cases h₀; cases h₁ h₀; refl
+
+lemma eta (x : sigma β₁) : sigma.mk x.1 x.2 = x :=
+by cases x; refl
 
 end
 

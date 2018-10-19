@@ -65,6 +65,9 @@ end expr
 
 namespace tactic
 
+meta def eval_expr' (α : Type*) [reflected α] (e : expr) : tactic α :=
+to_expr ``(id %%e) >>= eval_expr α
+
 meta def unify_univ (u u' : level) : tactic unit :=
 unify (expr.sort u) (expr.sort u')
 
