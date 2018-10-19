@@ -91,3 +91,7 @@ lemma list.length_to_list {α} (xs : list α) :
 by { rw [length,list_foldl_eq,list.to_list_eq_self,← list.foldr_reverse,← list.length_reverse],
      generalize : list.reverse xs = l,
      induction l; simp *, }
+#check @traverse
+instance {α : Type u} : traversable (prod.{u u} α) :=
+{ map := λ β γ f (x : α × β), prod.mk x.1 $ f x.2,
+  traverse := λ m _ β γ f (x : α × β), by exactI prod.mk x.1 <$> f x.2 }

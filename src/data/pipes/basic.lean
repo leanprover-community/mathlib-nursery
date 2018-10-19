@@ -123,16 +123,16 @@ open proxy_t.F
 #check @proxy_t.cases_on
 #check proxy_t.F
 #check i'
-protected def proxy_t.corec' {β}
-  (f₀ : Π X, (proxy_t i i' o o' α → X) →
+protected def proxy_t.corec' {a a' b b' β}
+  (f₀ : Π X, (proxy_t a a' b b' α → X) →
     α → cofix' (F i i' o o' β) ⊕ proxy_t.F i i' o o' β X)
-  (f₁ : Π X, (proxy_t i i' o o' α → X) →
-    o' → (o → proxy_t i i' o o' α) →
+  (f₁ : Π X, (proxy_t a a' b b' α → X) →
+    b' → (b → proxy_t a a' b b' α) →
     cofix' (F i i' o o' β) ⊕ F i i' o o' β X)
-  (f₂ : Π X, (proxy_t i i' o o' α → X) →
-    i → (i' → proxy_t i i' o o' α) →
+  (f₂ : Π X, (proxy_t a a' b b' α → X) →
+    a → (a' → proxy_t a a' b b' α) →
     cofix' (F i i' o o' β) ⊕ F i i' o o' β X)
-  : proxy_t i i' o o' α → proxy_t i i' o o' β :=
+  : proxy_t a a' b b' α → proxy_t i i' o o' β :=
 cofix.corec' $ λ X rec,
 proxy_t.cases (f₀ X rec) (f₁ X rec) (f₂ X rec)
 
@@ -203,6 +203,13 @@ instance : is_lawful_monad (proxy_t i i' o o') :=
 { bind_assoc := @bind_assoc _ _ _ _,
   pure_bind  := by { intros, simp [has_pure.pure] },
   id_map := @bind_pure _ _ _ _ }
+
+def push {a a' b b' c c' α} (x : proxy_t a a' b b' α) (y : proxy_t b b' c c' α) : proxy_t a a' c c' α :=
+proxy_t.corec'
+(λ X push x, sum.inr $ F.pure x)
+(λ X push x f, _)
+(λ X push x f, _)
+x
 
 -- #check cofix.eq_of_bisim
 -- #print prefix proxy_t.bisim

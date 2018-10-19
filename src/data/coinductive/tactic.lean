@@ -1,6 +1,7 @@
 import category.positive
 import data.coinductive.basic
 import data.coinductive.eq
+import meta.rb_map
 import logic.nursery
 import tactic.inductive_decl
 import tactic.recursive_def
@@ -31,7 +32,23 @@ do ls ← local_context,
 
 run_cmd add_interactive [`co_cases]
 
-open expr list
+open expr (hiding traverse) list
+
+@[user_attribute]
+meta def coinduct_ctor.attr : user_attribute (name_map (name × name)) unit :=
+{ name := `coinduct_ctor,
+  descr := "meta data for the constructors coinductive types",
+  after_set := some $ λ n _ _,
+    do { ind ← mk_const ``inductive_type,
+         t ← mk_const n >>= infer_type,
+         is_def_eq ind t <|> fail "Expecting type 'inductive_type'" },
+  cache_cfg :=
+  { dependencies := [],
+    mk_cache := λ vs,
+             do ds ← vs.mmap $ λ v,
+                   do { decl ← mk_const v >>= eval_expr' inductive_type,
+                        pure $ list.product (decl.ctors.map type_cnstr.name) [(v,decl.name)] },
+                pure $ native.rb_map.of_list ds.join } }
 
 meta def mk_head_t (decl : inductive_type) : tactic inductive_type :=
 do let n := decl.name,
@@ -306,12 +323,11 @@ do decl ← inductive_decl.parse meta_info,
    _       ← trace_error $ mk_no_confusion decl,
    _       ← trace_error $ mk_bisimulation_pred decl,
    add_meta_definition (decl.name <.> "_info") [] `(inductive_type) (reflect decl),
+   coinduct_ctor.attr.set (decl.name <.> "_info") () tt,
    pure ()
 
 meta def get_coinductive_info (n : name) : tactic inductive_type :=
 mk_const (n <.> "_info") >>= eval_expr' _
-
-open expr
 
 meta def to_functor_ctor_name (decl : inductive_type) : expr → expr
 | (const n ls) := const (n.update_prefix $ n.get_prefix <.> "F") ls
@@ -328,7 +344,7 @@ do let fn := a.get_app_fn,
 
 
 namespace interactive
-open interactive interactive.types expr lean.parser
+open interactive interactive.types lean.parser
 local postfix `?`:9001 := optional
 local postfix *:9001 := many
 
@@ -367,7 +383,7 @@ namespace tactic
 open lean.parser interactive interactive.types
 open tactic.interactive (generalize cases_arg_p)
 local postfix `?`:9000 := optional
-open binder_info expr
+open binder_info expr (hiding traverse)
 
 meta def mk_corecursive_eqn (args : list expr) (decl' : inductive_type) : recursive_def → tactic unit
 | decl@{ term := def_term.single v, .. } :=
@@ -390,6 +406,16 @@ do let args := decl.args,
    let d := t.mk_sorry,
    add_decl $ declaration.thm (decl.name.append_suffix "_def") t.collect_univ_params t (pure d),
    pure ()
+| decl@{ term := def_term.patterns v, .. } :=
+  trace "no no"
+
+def pcurry {α} {β : α → Sort*} {γ} (f : psigma β → γ) : Π a, β a → γ
+| a b := f ⟨a,b⟩
+
+def puncurry {α} {β : α → Sort*} {γ} (f : Π a, β a → γ) : psigma β → γ
+| ⟨a,b⟩ := f a b
+
+open traversable
 
 meta def mk_corecursive_def : recursive_def → tactic unit
 | d@{ term := def_term.single v, .. } :=
@@ -412,23 +438,76 @@ do (_,hd) ← unpi d.type,
    v' ← instantiate_mvars g,
    add_decl $ mk_definition d.name d.u_names t v',
    mk_corecursive_eqn vs decl d
+| d@{ term := def_term.patterns v, .. } :=
+do (p,hd) ← unpi d.type,
+   let coind_n := hd.get_app_fn.const_name,
+   decl ← get_coinductive_info coind_n,
+   g ← mk_meta_var d.type,
+   set_goals [g],
+   vs ← intron' d.args.length,
+   target >>= trace,
+   t ← infer_type (p.drop d.args.length).head,
+   let t := t.get_app_fn.const_name,
+   trace t,
+   -- p.mmap _,
+   v ← traverse (λ p : rec_pattern × expr,
+     traverse (λ v : expr, (head_beta (v.mk_app $ vs ++ to_list p.1) >>= instantiate_mvars) <* trace v) p) v,
+   trace $ v.map prod.snd,
+   vs ← list.reverse <$> intros,
+   revert vs.head,
+   vs.tail.mmap $ λ v, revert v >> refine ``(pcurry _),
+   -- _,
+   refine ``(cofix.corec' _),
+   [x,f] ← intron' 2,
+   vs.init.mmap $ λ v, refine ``(puncurry _) >> intro1,
+   intro1,
+   trace_state,
+   -- let v' := (v.abstract d.rec_fn).instantiate_var (f a),
+   -- let ctor := to_functor_ctor decl x v',
+   -- right,
+   -- v ← target >>= mk_meta_var,
+   -- exact ctor,
+   -- set_goals [v],
+   -- t ← instantiate_mvars d.type,
+   -- v' ← instantiate_mvars g,
+   -- add_decl $ mk_definition d.name d.u_names t v',
+   -- mk_corecursive_eqn vs decl d,
+   pure ()
+
+meta def lookup_ctor (n : name) : tactic name :=
+do env ← get_env,
+   if env.is_constructor n then do
+     t ← declaration.type <$> env.get n,
+     (_,t) ← mk_local_pis t,
+     pure t.get_app_fn.const_name
+   else do
+     m ← coinduct_ctor.attr.get_cache,
+     (t,d) ← m.find n,
+     pure t
+
 
 @[user_command]
 meta def corecursive_def (meta_info : decl_meta_info) (_ : parse $ tk "codef") : lean.parser unit :=
-do d ← recursive_def.parse,
+do d ← recursive_def.parse lookup_ctor,
    meta_info.attrs.apply d.name,
    trace_error $ mk_corecursive_def d,
    pure ()
 
 end tactic
 
--- set_option debugger false
 
 -- set_option debugger true
 
 -- #print prefix tree.child_t.rec
 
 namespace examples
+-- #check diverge
+
+codef bind {α β : Sort*} : examples.computation α → (α → examples.computation β) → examples.computation β
+| (examples.computation.pure x) := λ f : α → examples.computation β, f x
+| (examples.computation.think x) := λ f, examples.computation.think (bind x f)
+
+set_option debugger false
 
 codef diverge {α : Sort*} : examples.computation α :=
 computation.think diverge
@@ -471,19 +550,19 @@ begin
   left, refl,
 end
 
-lemma head_think {α} (x : computation α) :
-  cofix.head (computation.think x) = computation.head_t.think :=
-begin
-  dunfold cofix.head computation.think cofix.fold,
-  simp, admit
-end
+-- lemma head_think {α} (x : computation α) :
+--   cofix.head (computation.think x) = computation.head_t.think :=
+-- begin
+--   dunfold cofix.head computation.think cofix.fold,
+--   simp, admit
+-- end
 
-lemma children_think {α} (x : computation α) (i : child_t (cofix.head (computation.think x))) :
-  cofix.children (computation.think x) i = x :=
-begin
-  dunfold cofix.head computation.think cofix.fold,
-  simp, admit
-end
+-- lemma children_think {α} (x : computation α) (i : child_t (cofix.head (computation.think x))) :
+--   cofix.children (computation.think x) i = x :=
+-- begin
+--   dunfold cofix.head computation.think cofix.fold,
+--   simp, admit
+-- end
 
 -- lemma bisim_sound {α} (x y : examples.computation α)
 --   (h : bisim x y) : x = y :=
@@ -583,10 +662,6 @@ codata get_m (α : Type*)
 | fail : get_m
 | pure : α → get_m
 | read : (unsigned → unsigned → get_m) → get_m
-
-universes u
-
-def get_m' (α) := cofix (get_m.child_t α)
 
 -- inductive get_m (α : Type*)
 -- | fail {} : get_m
