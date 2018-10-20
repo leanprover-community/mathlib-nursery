@@ -11,8 +11,8 @@ open lattice
 class has_limit (α : Type u)
 extends order_bot α :=
 (lim : stream α → α)
-(lim_bounds : ∀ xs : stream α, ∀ x ∈ xs, x ≤ lim xs)
-(least_bounds : ∀ xs : stream α, ∀ y, (∀ x ∈ xs, x ≤ y) → lim xs ≤ y)
+(lim_bounds : ∀ xs : stream α, monotone xs → ∀ x ∈ xs, x ≤ lim xs)
+(least_bounds : ∀ xs : stream α, monotone xs → ∀ y, (∀ x ∈ xs, x ≤ y) → lim xs ≤ y)
 
 open roption
 
