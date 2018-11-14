@@ -7,7 +7,7 @@ import tactic.converter.interactive
 import tactic
 import category.comonad
 
-universes u v u₁ v₁ u₂ v₂
+universes u v u₁ v₁ u₂ v₂ u₃ v₃ u₄ v₄
 
 namespace category_theory
 
@@ -53,6 +53,16 @@ namespace Monoidal
 def prod {C : Type u} [category.{u v} C] [Monoidal C] (x y : C) := (Monoidal.prod' _).obj (x,y)
 
 infixr ` ⊗ `:11 := Monoidal.prod
+
+class MonoidalF
+  {C₀ C₁ : Type u}
+  [category.{u v} C₀]
+  [category.{u v} C₁]
+  [Monoidal.{u v} C₀]
+  [Monoidal.{u v} C₁]
+  (F : C₀ ⥤ C₁) :=
+(preserves_I : F.obj (I C₀) ≅ I C₁)
+(preserves_prod : Π X Y : C₀, F.obj (X ⊗ Y) ≅ F.obj X ⊗ F.obj Y)
 
 variables {C : Type u} [category.{u v} C] [Monoidal C]
 
@@ -127,6 +137,80 @@ instance types.Monoidal_category :
   left_id'  := λ a, { hom := λ a, a.2, inv := λ a, (punit.star,a) },
   assoc'    := λ α β γ, { hom := λ ⟨a,b,c⟩, ((a,b),c), inv := λ ⟨⟨a,b⟩,c⟩, (a,(b,c)) } }
 
+section
+
+variables (C₀ : Type u)
+          (C₁ : Type u)
+          (C₂ : Type u)
+          (C₃ : Type u)
+
+def function.assoc (a : (C₀ × C₁) × C₂) : (C₀ × (C₁ × C₂)) :=
+(a.1.1, a.1.2, a.2)
+
+variables
+   [𝒞₀ : category.{u v} C₀]
+   [𝒞₁ : category.{u v} C₁] -- [Monoidal C₁]
+   [𝒞₂ : category.{u v} C₂] -- [Monoidal C₂]
+   [𝒞₃ : category.{u v} C₃] -- [Monoidal C₂]
+
+include 𝒞₀ 𝒞₁ 𝒞₂ 𝒞₃
+
+def prod.assoc : ((C₀ × C₁) × C₂) ⥤ (C₀ × (C₁ × C₂)) :=
+{ obj := λ (a : (C₀ × C₁) × C₂), (a.1.1, a.1.2, a.2),
+  map := λ (X Y : (C₀ × C₁) × C₂) f, (f.1.1, f.1.2, f.2) }
+
+def prod.regroup : ((C₀ × C₁) × (C₂ × C₃)) ⥤ ((C₀ × C₂) × (C₁ × C₃)) :=
+{ obj := λ a, ((a.1.1,a.2.1),(a.1.2,a.2.2)),
+  map := λ X Y a, ((a.1.1,a.2.1),(a.1.2,a.2.2)) }
+
+omit 𝒞₂ 𝒞₃
+
+def iso.prod {x₀ y₀ : C₀} {x₁ y₁ : C₁}
+  (h₀ : x₀ ≅ y₀) (h₁ : x₁ ≅ y₁) : (x₀, x₁) ≅ (y₀, y₁) :=
+{ hom := (h₀.hom,h₁.hom),
+  inv := (h₀.inv,h₁.inv), }
+
+#check prod.assoc
+
+instance prod.Monoidal_category [Monoidal.{u v} C₀] [Monoidal.{u v} C₁] :
+  Monoidal (C₀ × C₁) :=
+{ I := (I _, I _),
+  prod' := prod.regroup _ _ _ _ ⋙ functor.prod (prod' C₀) (prod' C₁),
+  assoc' := λ (X Y Z : C₀ × C₁),
+    iso.prod _ _ (assoc' _ _ _) (assoc' _ _ _),
+  left_id' := λ (X : C₀ × C₁),
+    { hom := ((left_id' _).hom,(left_id' _).hom),
+      inv := ((left_id' _).inv,(left_id' _).inv) },
+  right_id' := λ (X : C₀ × C₁),
+    { hom := ((right_id' _).hom,(right_id' _).hom),
+      inv := ((right_id' _).inv,(right_id' _).inv) },
+  triangle' := sorry,
+  pentagon' := sorry }
+  -- right_id' := by { intros, dsimp [functor.prod,prod.regroup],
+  --                   repeat { fsplit },
+  --                   apply (right_id' _).hom, apply (right_id' _).hom,
+  --                   apply (right_id' _).inv, apply (right_id' _).inv,
+  --                   admit, admit },
+  -- left_id'  := by { intros, dsimp [functor.prod,prod.regroup],
+  --                   repeat { fsplit },
+  --                   apply (left_id' _).hom, apply (left_id' _).hom,
+  --                   apply (left_id' _).inv, apply (left_id' _).inv,
+  --                   admit, admit },
+  -- assoc'    := by { admit } }
+
+variables [Monoidal.{u v} C₀] [Monoidal.{u v} C₁]
+
+instance prod.MonoidalF : MonoidalF (prod.swap C₀ C₁) :=
+sorry
+
+variables [𝒞 : Monoidal.{u v} C₂]
+include 𝒞
+
+instance comp.MonoidalF (F : C₀ ⥤ C₁) (G : C₁ ⥤ C₂) : MonoidalF (F ⋙ G) :=
+sorry
+
+end
+-- option ∘ (nat,_) ∘ cofix ∘ F
 #check Monoidal.prod'
 
 def op.prod (C) [category.{u v} C] [Monoidal.{u v} C] : (Cᵒᵖ × (Cᵒᵖ)) ⥤ (Cᵒᵖ) :=
@@ -149,6 +233,12 @@ begin
   { apply mono.right_cancellation a b this },
   simp, simp [h],
 end
+
+def left [Monoidal.{u v} C] {a b : C} (c : C) (f : a ⟶ b) : a⊗c ⟶ b⊗c :=
+f ⊗ 𝟙 _
+
+def right [Monoidal.{u v} C] {a b : C} (c : C) (f : a ⟶ b) : c⊗a ⟶ c⊗b :=
+𝟙 _ ⊗ f
 
 instance op.Monoidal_category (C) [category.{u v} C] [Monoidal.{u v} C] :
   Monoidal.{u v} (Cᵒᵖ) :=
