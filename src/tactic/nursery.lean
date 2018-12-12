@@ -6,20 +6,6 @@ Author: Simon Hudon
 import data.list.basic
 import tactic.basic
 
-namespace native
-namespace rb_map
-
-meta def find_def {α β} [has_lt α] [decidable_rel ((<) : α → α → Prop)]
-  (x : β) (m : rb_map α β) (k : α) :=
-(m.find k).get_or_else x
-
-meta def insert_cons {α β} [has_lt α] [decidable_rel ((<) : α → α → Prop)]
-  (k : α) (x : β) (m : rb_map α (list β)) : rb_map α (list β) :=
-m.insert k (x :: m.find_def [] k)
-
-end rb_map
-end native
-
 namespace name
 
 def append_suffix : name → string → name
@@ -42,10 +28,6 @@ end level
 
 namespace expr
 
-meta def is_mvar : expr → bool
-| (mvar _ _ _) := tt
-| _            := ff
-
 meta def replace_all (e : expr) (p : expr → Prop) [decidable_pred p] (r : expr) : expr :=
 e.replace $ λ e i, guard (p e) >> pure (r.lift_vars 0 i)
 
@@ -64,9 +46,6 @@ end
 end expr
 
 namespace tactic
-
-meta def eval_expr' (α : Type*) [reflected α] (e : expr) : tactic α :=
-to_expr ``(id %%e) >>= eval_expr α
 
 meta def unify_univ (u u' : level) : tactic unit :=
 unify (expr.sort u) (expr.sort u')
@@ -199,16 +178,6 @@ namespace tactic.interactive
 open lean lean.parser interactive interactive.types tactic
 
 local postfix `*`:9000 := many
-
-meta def guard_expr_eq' (t : expr) (p : parse $ tk ":=" *> texpr) : tactic unit :=
-do e ← to_expr p, is_def_eq t e
-
-/--
-`guard_target t` fails if the target of the main goal is not `t`.
-We use this tactic for writing tests.
--/
-meta def guard_target' (p : parse texpr) : tactic unit :=
-do t ← target, guard_expr_eq' t p
 
 meta def clear_except (xs : parse ident *) : tactic unit :=
 do let ns := name_set.of_list xs,
