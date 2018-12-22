@@ -9,25 +9,49 @@ universes u v
 
 namespace category_theory
 variables (C : Type u) [𝒞 : category.{u v} C]
+
+class has_term :=
+(term : C)
+
+class has_init :=
+(init : C)
+
+export has_term (term)
+export has_init (init)
+
 include 𝒞
 
-class has_terminal :=
-(term : C)
+class has_terminal
+extends has_term C :=
 (intro : Π {x}, x ⟶ term)
+(unique : ∀ {x} (f g : x ⟶ term), f = g)
 
-class has_initial :=
-(init : C)
+@[simp]
+lemma has_terminal.unique_iff [has_terminal.{u v} C] :
+  ∀ {x} (f g : x ⟶ term C), f = g ↔ true :=
+by intros; simp only [has_terminal.unique f g, eq_self_iff_true]
+
+class has_initial
+extends has_init C :=
 (elim : Π {x}, init ⟶ x)
+(unique : ∀ {x} (f g : init ⟶ x), f = g)
+
+@[simp]
+lemma has_initial.unique_iff [has_initial.{u v} C] :
+  ∀ {x} (f g : init C ⟶ x), f = g ↔ true :=
+by intros; simp only [has_initial.unique f g, eq_self_iff_true]
 
 open has_terminal has_initial
 
 instance [has_terminal.{u v} C] : has_initial.{u v} (Cᵒᵖ) :=
-{ init := (term.{u v} C : C),
-  elim := λ x, intro.{u v} C }
+{ init := (term C : C),
+  elim := λ x, intro.{u v} C,
+  unique := λ x, has_terminal.unique }
 
 instance [has_initial.{u v} C] : has_terminal.{u v} (Cᵒᵖ) :=
-{ term := (init.{u v} C : C),
-  intro := λ x, elim C }
+{ term := (init C : C),
+  intro := λ x, elim C,
+  unique := λ x, has_initial.unique }
 
 def with_terminal := option C
 
@@ -53,7 +77,8 @@ instance with_terminal.category : category (with_terminal C) :=
 
 instance with_terminal.has_terminal : has_terminal.{u max u v} (with_terminal C) :=
 { term := none,
-  intro := with_terminal_hom.term }
+  intro := with_terminal_hom.term,
+  unique := by { intros, cases f, cases g, refl } }
 
 def with_initial := option C
 
@@ -79,6 +104,19 @@ instance with_initial.category : category.{u max u v} (with_initial C) :=
 
 instance with_initial.has_initial : has_initial.{u max u v} (with_initial C) :=
 { init := none,
-  elim := with_initial_hom.init }
+  elim := with_initial_hom.init,
+  unique := by { intros, cases f, cases g, refl } }
+
+omit 𝒞
+
+instance types.has_initial : has_initial.{u+1 u} (Type u) :=
+{ init := pempty,
+  elim := λ x, pempty.rec _,
+  unique := λ x f g, by ext ⟨ ⟩; refl }
+
+instance types.has_terminal : has_terminal.{u+1 u} (Type u) :=
+{ term := punit,
+  intro := λ x _, punit.star,
+  unique := by { intros, ext, apply punit_eq } }
 
 end category_theory

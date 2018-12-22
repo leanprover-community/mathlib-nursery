@@ -67,7 +67,7 @@ variables (C₀ : Type u)  [category.{u v} C₀]  [𝒞₀ : Cartesian C₀]
 include 𝒞₀ 𝒞₁
 
 instance prod.Cartesian : Cartesian (C₀ × C₁) :=
-{ diagonal := λ X, (diagonal X.fst,diagonal X.snd),
+{ diagonal := λ X,  (diagonal X.fst, diagonal X.snd),
   augment := λ X, (augment X.fst,augment X.snd),
   right_cancel' := begin intros x, tactic.ext1 [] {new_goals := tactic.new_goals.all},
                          { cases x, dsimp at *, apply right_cancel' },
