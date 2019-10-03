@@ -189,8 +189,7 @@ begin
     { simp [encode_val,parser_step] with functor_norm,
       rw ih_ar; try { refl },
       apply lt_of_lt_of_le _ h,
-      simp [sizeof,has_sizeof.sizeof,value.sizeof,punit.sizeof,list.sizeof],
-      apply nat.lt_add_left, norm_num } },
+      simp [sizeof,has_sizeof.sizeof,value.sizeof,punit.sizeof,list.sizeof] } },
 end
 
 lemma encode_obj_ind_step : encoding_correctness_obj n :=
