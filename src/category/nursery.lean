@@ -1,7 +1,7 @@
 
 import tactic
-import category.functor
-import category.applicative
+import control.functor
+import control.applicative
 
 universes u v
 

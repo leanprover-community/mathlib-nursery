@@ -1,8 +1,8 @@
 [package]
 name = "mathlib-nursery"
 version = "0.1"
-lean_version = "3.4.1"
+lean_version = "leanprover-community/lean:3.19.0"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover/mathlib", rev = "3ddfc239ddd757aa60cfa5a6f106bc68c5b8e1fc"}
+mathlib = {git = "https://github.com/leanprover/mathlib", rev = "0b4444ca1870767f085b439903676f7cbfe0fbf8"}

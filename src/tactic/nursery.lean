@@ -8,21 +8,9 @@ import tactic.basic
 
 namespace name
 
-def append_suffix : name → string → name
-| (mk_string s n) s' := mk_string (s ++ s') n
-| n _ := n
-
 end name
 
 namespace level
-
-meta def fold_mvar {α} : level → (name → α → α) → α → α
-| zero f := id
-| (succ a) f := fold_mvar a f
-| (param a) f := id
-| (mvar a) f := f a
-| (max a b) f := fold_mvar a f ∘ fold_mvar b f
-| (imax a b) f := fold_mvar a f ∘ fold_mvar b f
 
 end level
 
@@ -57,13 +45,6 @@ do add_decl d,
 meta def renew : expr → tactic expr
 | (expr.local_const uniq pp bi t) := mk_local' pp bi t
 | e := fail format!"{e} is not a local constant"
-
-meta def trace_error {α} (tac : tactic α) : tactic α :=
-λ s, match tac s with
-     | r@(result.success _ _) := r
-     | (result.exception (some msg) pos s') := (trace (msg ()) >> result.exception (some msg) pos) s'
-     | (result.exception none pos s') := (trace "no msg" >> result.exception none pos) s'
-     end
 
 meta def is_type (e : expr) : tactic bool :=
 do (expr.sort _) ← infer_type e | pure ff,
@@ -129,7 +110,7 @@ do t ← infer_type e,
       pure vs'
 
 meta def extract_def' {α} (n : name) (trusted : bool) (elab_def : tactic α) : tactic α :=
-do cxt ← list.map to_implicit <$> local_context,
+do cxt ← list.map expr.to_implicit_local_const <$> local_context,
    t ← target,
    (r,d) ← solve_aux t elab_def,
    d ← instantiate_mvars d,
@@ -147,16 +128,6 @@ meta def remove_intl_const : expr → tactic expr
      pure $ local_const uniq pp bi t
 | e := pure e
 
-meta def intron' : ℕ → tactic (list expr)
-| 0 := pure []
-| (succ n) := (::) <$> intro1 <*> intron' n
-
-meta def unpi : expr → tactic (list expr × expr)
-| (pi n bi d b) :=
-  do v ← mk_local' n bi d,
-     prod.map (cons v) id <$> unpi (b.instantiate_var v)
-| e := pure ([],e)
-
 meta def unify_app_aux : expr → expr → list expr → tactic expr
 | e (pi _ _ d b) (a :: as) :=
 do t ← infer_type a,
@@ -171,20 +142,15 @@ meta def unify_app (e : expr) (args : list expr) : tactic expr :=
 do t ← infer_type e >>= whnf,
    unify_app_aux e t args
 
+namespace interactive
+
+meta def other_goals (tac : itactic) : tactic unit :=
+do (g::gs) ← get_goals,
+   set_goals gs,
+   all_goals tac,
+   gs' ← get_goals,
+   set_goals $ g :: gs'
+
+end interactive
+
 end tactic
-
-namespace tactic.interactive
-
-open lean lean.parser interactive interactive.types tactic
-
-local postfix `*`:9000 := many
-
-meta def clear_except (xs : parse ident *) : tactic unit :=
-do let ns := name_set.of_list xs,
-   local_context >>= mmap' (λ h : expr,
-     when (¬ ns.contains h.local_pp_name) $
-       try $ tactic.clear h) ∘ list.reverse
-
-meta def splita := split; [skip, assumption]
-
-end tactic.interactive

@@ -2,7 +2,7 @@
 import tactic
 import tactic.monotonicity
 import tactic.norm_num
-import category.basic
+import control.basic
 import category.nursery
 import data.equiv.nursery
 import data.serial.medium
@@ -18,12 +18,12 @@ def serial_inverse {α : Type u} (encode : α → put_m) (decode : get_m α) : P
 
 class serial (α : Type u) :=
   (encode : α → put_m)
-  (decode : get_m α)
+  (decode [] : get_m α)
   (correctness : ∀ w, decode -<< encode w = pure w)
 
 class serial1 (f : Type u → Type v) :=
-  (encode : Π {α}, (α → put_m) → f α → put_m)
-  (decode : Π {α}, get_m α → get_m (f α))
+  (encode [] : Π {α}, (α → put_m) → f α → put_m)
+  (decode [] : Π {α}, get_m α → get_m (f α))
   (correctness : ∀ {α} put get, serial_inverse.{u} put get →
                  ∀ (w : f α), decode get -<< encode put w = pure w)
 
@@ -33,9 +33,9 @@ instance serial.serial1 {f α} [serial1 f] [serial α] : serial (f α) :=
   correctness := serial1.correctness _ _ serial.correctness }
 
 class serial2 (f : Type u → Type v → Type w) :=
-  (encode : Π {α β}, (α → put_m.{u}) → (β → put_m.{v}) → f α β → put_m.{w})
-  (decode : Π {α β}, get_m α → get_m β → get_m (f α β))
-  (correctness : ∀ {α β} putα getα putβ getβ,
+  (encode [] : Π {α β}, (α → put_m.{u}) → (β → put_m.{v}) → f α β → put_m.{w})
+  (decode [] : Π {α β}, get_m α → get_m β → get_m (f α β))
+  (correctness [] : ∀ {α β} putα getα putβ getβ,
                    serial_inverse putα getα →
                    serial_inverse putβ getβ →
                  ∀ (w : f α β), decode getα getβ -<< encode putα putβ w = pure w)
@@ -229,11 +229,11 @@ lemma encoder_seq (f : serializer σ (α → β)) (x : serializer σ α) (w : σ
 end lawful_applicative
 
 instance {α} : is_lawful_functor (serializer.{u} α) :=
-by refine { .. }; intros; apply serializer.eq; try { ext }; simp [map_map]
+by refine { .. }; intros; apply serializer.eq; try { ext }; simp [functor.map_map]
 
 instance {α} : is_lawful_applicative (serializer.{u} α) :=
 by{  constructor; intros; apply serializer.eq; try { ext };
-     simp [(>>),pure_seq_eq_map,seq_assoc,bind_assoc],  }
+     simp [(>>),pure_seq_eq_map,seq_assoc,bind_assoc, bind_pure] with monad_norm,  }
 
 protected def up {β} (ser : serializer β β) : serializer (ulift.{u v} β) (ulift.{u v} β) :=
 { encoder := pliftable.up' _ ∘ ser.encoder ∘ ulift.down,

@@ -1,5 +1,6 @@
 
 import data.serial.basic
+import tactic.nursery
 
 universes u v
 
@@ -91,19 +92,27 @@ begin
   induction w using nat.strong_induction_on generalizing x k,
   rw [nat.encode], dsimp, split_ifs,
   { simp [nat.decode_aux], rw w_a,
-    simp, congr,
-    rw [nat.mul_div_right,mul_assoc,← nat.left_distrib x,add_comm,nat.mod_add_div],
-    norm_num, apply nat.div_lt_self,
-    { by_contradiction, revert h,
-      apply not_lt_of_le, replace a := le_antisymm (le_of_not_lt a) (nat.zero_le _),
-      subst w_n, norm_num [word_sz], },
-    norm_num [word_sz,unsigned_sz,nat.succ_eq_add_one], },
-  { simp [nat.decode_aux], rw if_neg,
-    simp, dsimp [pure,read_write], congr, rw nat.add_mul_div_left,
-    norm_num, replace h := le_antisymm (le_of_not_lt h) (nat.zero_le _),
-    have := nat.mod_add_div w_n word_sz,
-    simp [h] at this, exact this,
-    { norm_num }, { norm_num } }
+    -- simp, congr,
+    rw [← add_assoc,mul_assoc,← nat.left_distrib x, add_comm _ (w_n % word_sz), nat.mod_add_div],
+    -- norm_num, apply nat.div_lt_self,
+    { clear w_a,
+      have : 1 < word_sz,
+      { norm_num [word_sz, unsigned_sz] },
+      apply nat.div_lt_self _ this,
+      rw nat.le_div_iff_mul_le at h,
+      { simp at *,
+        transitivity 1, norm_num,
+        apply lt_of_lt_of_le this h, },
+      { norm_num [word_sz, unsigned_sz] } } },
+  { simp [nat.decode_aux],
+    replace h := lt_of_not_ge h,
+    rw [nat.div_lt_iff_lt_mul, one_mul] at h,
+    other_goals { norm_num [word_sz, unsigned_sz] },
+    -- split_ifs,
+    rw if_neg, other_goals { norm_num [add_comm, nat.add_mul_mod_self_left] },
+    simp, dsimp [pure,read_write], congr,
+    rw [add_comm, nat.add_mul_div_left, nat.mod_eq_of_lt],
+    norm_num, assumption, norm_num },
 end }
 
 def list.encode {α : Type u} (put : α → put_m) (xs : list α) : put_m.{u} :=

@@ -1,6 +1,6 @@
 
 import data.list.basic
-import category.traversable.instances
+import control.traversable.instances
 
 universes u v
 
@@ -90,7 +90,7 @@ lemma list.length_to_list {α} (xs : list α) :
   length (to_list xs) = xs.length :=
 by { rw [length,list_foldl_eq,list.to_list_eq_self,← list.foldr_reverse,← list.length_reverse],
      generalize : list.reverse xs = l,
-     induction l; simp *, }
+     induction l; simp [*, add_comm], }
 #check @traverse
 instance {α : Type u} : traversable (prod.{u u} α) :=
 { map := λ β γ f (x : α × β), prod.mk x.1 $ f x.2,

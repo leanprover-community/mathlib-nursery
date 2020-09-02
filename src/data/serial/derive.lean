@@ -5,7 +5,7 @@ import data.nat.nursery
 import tactic.nursery
 import tactic.norm_num
 import tactic.basic
-import category.basic
+import control.basic
 
 namespace tactic
 

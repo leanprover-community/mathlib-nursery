@@ -14,8 +14,8 @@ instance ulift.liftable.ulift {α : Type w} : liftable (ulift.{u₀} α) (ulift.
 ⟨ equiv.trans equiv.ulift equiv.ulift.symm ⟩
 
 class liftable1 (f : (Type u₀ → Type u₁)) (g : Type v₀ → Type v₁) :=
-  (up   : Π {α β}, α ≃ β → f α → g β)
-  (down : Π {α β}, α ≃ β → g β → f α)
+  (up []  : Π {α β}, α ≃ β → f α → g β)
+  (down [] : Π {α β}, α ≃ β → g β → f α)
   (up_down : ∀ {α β} (F : α ≃ β) (x : g β), up F (down F x) = x)
   (down_up : ∀ {α β} (F : α ≃ β) (x : f α), down F (up F x) = x)
 
@@ -66,7 +66,7 @@ def state_t.liftable' {s : Type u₀} {s' : Type u₁} {m m'} [functor m'] [func
 { up   := λ _ _ G ⟨ f ⟩, ⟨ λ s, liftable1.up _ (equiv.prod_congr G F) (f $ F.symm s) ⟩
 , down := λ _ _ G ⟨ g ⟩, ⟨ λ s, liftable1.down _ (equiv.prod_congr G F) $ g (F s) ⟩
 , up_down := by { rintros α β G ⟨ f ⟩, simp! }
-, down_up := by { rintros α β G ⟨ g ⟩, simp! [map_map,function.comp] } }
+, down_up := by { rintros α β G ⟨ g ⟩, simp! [functor.map_map,function.comp] } }
 
 instance {s : Type u₀} {s' : Type u₁} {m m'} [functor m'] [functor m] [is_lawful_functor m'] [is_lawful_functor m]
   [liftable1 m m'] [liftable s s'] :
@@ -80,7 +80,7 @@ def reader_t.liftable' {s : Type u₀} {s' : Type u₁} {m : Type u₀ → Type 
 { up   := λ _ _ G ⟨ f ⟩, ⟨ λ s, liftable1.up _ G (f $ F.symm s) ⟩
 , down := λ _ _ G ⟨ g ⟩, ⟨ λ s, liftable1.down _ G $ g $ F s ⟩
 , up_down := by { rintros α β G ⟨ f ⟩, simp! }
-, down_up := by { rintros α β G ⟨ g ⟩, simp! [map_map,function.comp] } }
+, down_up := by { rintros α β G ⟨ g ⟩, simp! [functor.map_map,function.comp] } }
 
 instance {s : Type u₀} {s' : Type u₁} {m : Type u₀ → Type v₀} {m' : Type u₁ → Type v₁}
   [liftable1 m m'] [liftable s s'] :

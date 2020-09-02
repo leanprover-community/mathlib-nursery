@@ -3,7 +3,7 @@ import tactic
 import tactic.linarith
 import tactic.norm_num
 import data.sigma.fst
-import category.basic
+import control.basic
 
 universes u
 
@@ -36,7 +36,7 @@ protected def bind : Π (x : st α) (f : α → st β), st β
 | (write v r f) g := write v r $ λ v, bind (f v) g
 
 def addr : sigma ref → ℕ
-| ⟨_,⟨_,x⟩⟩ := x
+| ⟨_,x⟩ := x.addr
 
 instance : monad.{u u+1} st :=
 { pure := @intl.st.pure,
@@ -88,7 +88,7 @@ begin
 end
 
 def alloc (α : Type u) (ls : list (sigma ref.{u})) : ref α :=
-⟨ _, ls.length ⟩
+⟨ ls.length ⟩
 
 structure mem (ls : list (sigma ref.{u})) :=
 (vals : array ls.length value.{u})
@@ -119,7 +119,7 @@ def mem.write {ls : list (sigma ref.{u})} {α} (x : α) (r : ref α) (h : sigma.
                        intro, injection a, contradiction } },
   .. m  }
 
-def mem.alloc {ls : list (sigma ref.{u})} {α} (x : α) (m : mem ls) : mem (⟨α,⟨_,ls.length⟩⟩ :: ls) :=
+def mem.alloc {ls : list (sigma ref.{u})} {α} (x : α) (m : mem ls) : mem (⟨α,⟨ls.length⟩⟩ :: ls) :=
 { vals := m.vals.push_back ⟨_,x⟩,
   valid_ptrs := by { rintro _ ⟨_ | _⟩, norm_num, dsimp,
                      transitivity ls.length, apply m.valid_ptrs _ ♯, norm_num },

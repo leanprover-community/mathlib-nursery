@@ -47,7 +47,7 @@ do let u := fresh_univ decl.u_names,
      do { cn ← get_unused_name "c",
           n ← mk_mapp c.name $ (decl.params ++ c.args).map some,
           pis c.args (C.mk_app $ c.result ++ [n]) >>= mk_local_def cn },
-   t ← pis ((decl.params ++ [C] ++ idx).map to_implicit ++ [n] ++ cases) (C.mk_app (idx ++ [n])),
+   t ← pis ((decl.params ++ [C] ++ idx).map to_implicit_local_const ++ [n] ++ cases) (C.mk_app (idx ++ [n])),
    p ← mk_mapp (decl.name <.> "rec") $ (decl.params ++ [C] ++ cases ++ idx ++ [n]).map some,
    p ← lambdas (decl.params ++ [C] ++ idx ++ [n] ++ cases) p,
    d ← instantiate_mvars p,
@@ -149,7 +149,7 @@ meta def inductive_type.get_constructor (c_name : name) : inductive_type → opt
 meta def type_cnstr.type (decl : inductive_type) : type_cnstr → tactic expr
 | ⟨cn,vs,r⟩ :=
 let sig_c  : expr := const decl.name decl.u_params in
-tactic.pis (decl.params.map to_implicit ++ vs) $ sig_c.mk_app $ decl.params ++ r
+tactic.pis (decl.params.map to_implicit_local_const ++ vs) $ sig_c.mk_app $ decl.params ++ r
 
 meta def mk_inductive : inductive_type → tactic unit
 | decl@{ u_names := u_names, params := params, ctors := ctors, .. } :=
@@ -170,10 +170,10 @@ open interactive
 
 meta def inductive_type.of_decl (decl : inductive_decl) : tactic inductive_type :=
 do d ← decl.decls.nth 0,
-   (idx,t) ← infer_type  d.sig >>= unpi,
+   (idx,t) ← infer_type  d.sig >>= mk_local_pis,
    cs ← d.intros.mmap $ λ c : expr,
    do { t ← infer_type c,
-        (vs,t) ← unpi t,
+        (vs,t) ← mk_local_pis t,
         pure (t.get_app_fn.const_name,{ type_cnstr .
                name := c.local_pp_name,
                args := vs,

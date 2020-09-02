@@ -419,7 +419,7 @@ end
 lemma equiv_bind {m} [monad m] [is_lawful_monad m] {α α' β}
   (Heq : α ≃ α') (x : m α) (f : α → m β) :
   x >>= f = (Heq <$> x) >>= f ∘ Heq.symm :=
-by simp [(∘)] with functor_norm
+by simp [(∘)] with monad_norm
 
 def sum.map {α α' β β'} (f : α → α') (g : β → β') : α ⊕ β → α' ⊕ β'
 | (sum.inr x) := sum.inr $ g x

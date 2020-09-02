@@ -172,6 +172,7 @@ variables ih_obj : ∀ (x : ℕ), x < n → encoding_correctness_obj x
 variables ih_ar : ∀ (x : ℕ), x < n → encoding_correctness_array x
 
 include ih_val ih_obj ih_ar
+#exit
 
 lemma encode_val_ind_step : encoding_correctness_val n :=
 begin
@@ -192,6 +193,7 @@ begin
       simp [sizeof,has_sizeof.sizeof,value.sizeof,punit.sizeof,list.sizeof],
       apply nat.lt_add_left, norm_num } },
 end
+
 
 lemma encode_obj_ind_step : encoding_correctness_obj n :=
 begin

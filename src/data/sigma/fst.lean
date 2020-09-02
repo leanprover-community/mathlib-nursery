@@ -138,16 +138,6 @@ theorem fst_injective_comp (gi : fst_injective g) (fi : fst_injective f) :
   (f.trans g) s = g (f s) :=
 rfl
 
-@[extensionality]
-lemma ext {x₀ x₁ : sigma β₁}
-  (h₀ : x₀.1 = x₁.1)
-  (h₁ : x₀.1 = x₁.1 → x₀.2 == x₁.2) :
-  x₀ = x₁ :=
-by casesm* sigma _; cases h₀; cases h₁ h₀; refl
-
-lemma eta (x : sigma β₁) : sigma.mk x.1 x.2 = x :=
-by cases x; refl
-
 end
 
 end sigma
